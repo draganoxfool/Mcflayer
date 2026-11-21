@@ -76,6 +76,24 @@ python -m pyflayer.cli play.pika-network.net -u Steve --timeout 15
 
 See the [World module](world.md) for chunk, entity and inventory semantics.
 
+## New API modules
+
+The action primitives were split into focused modules since M5:
+
+| Module | Key functions |
+|---|---|
+| `pyflayer.bot.windows` | Window packet operations: `select_hotbar()`, `click_slot()`, `shift_click_slot()`, `drop_slot()`, `close_window()` |
+| `pyflayer.bot.interactions` | Block/item packet primitives: `swing_arm()`, `use_item()`, `place_block()`, `start_digging()`, `finish_digging()`, `cancel_digging()`, `break_block()` |
+
+Both modules are thin delegates off `Bot`; the `Bot` methods themselves have been refactored to delegate to them.
+
+- `bot.select_hotbar(slot)` selects a hotbar slot
+- `bot.click_slot(window, slot, mode=ClickMode.LEFT, action=...)` sends a window click
+- `bot.use_item()` uses the block_place sentinel (cursor at -1,-1,-1, dir -1)
+- `bot.place_block(pos, face)` places a block at the given position and direction
+- `bot.start_digging(pos, face)` starts digging a block
+- `bot.break_block(pos, face, delay=...)` breaks a block with optional delay
+
 ## Movement and physics
 
 The bot creates one `TickDriver` when the first server position arrives. It steps the engine 20

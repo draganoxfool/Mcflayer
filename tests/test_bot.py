@@ -11,10 +11,15 @@ from pyflayer.errors import KickedError
 from pyflayer.events import (
     ChatEvent,
     DeathEvent,
+    InventoryChangedEvent,
     JoinEvent,
     KickEvent,
     RespawnEvent,
 )
+from pyflayer.models.enums import Face
+from pyflayer.models.items import ItemStack
+from pyflayer.models.vec3 import BlockPos
+from pyflayer.protocol.protodef import Packet
 from pyflayer.testing import FakeServer
 
 
@@ -207,6 +212,124 @@ def test_split_message() -> None:
     parts = split_message("x" * 600)
     assert all(len(part) <= 256 for part in parts)
     assert "".join(parts) == "x" * 600
+
+
+async def _wait_for_packets(
+    server: FakeServer, name: str, count: int = 1, timeout: float = 2.0
+) -> list[object]:
+    async with asyncio.timeout(timeout):
+        while True:
+            packets = [packet for packet in server.received if packet.name == name]
+            if len(packets) >= count:
+                return packets
+            await asyncio.sleep(0.01)
+
+
+async def test_hotbar_selection_sends_slot_id_and_accepts_server_update() -> None:
+    async with FakeServer() as server:
+        bot = await _start_bot(server)
+        task = asyncio.create_task(bot.run())
+        await bot.select_hotbar(4)
+        packets = await _wait_for_packets(server, "held_item_slot")
+        assert packets[0].fields["slotId"] == 4
+        assert bot.inventory.held_slot == 4
+
+        # The server-to-client packet uses a byte field named ``slot``; the outgoing
+        # client-to-server packet names the short field ``slotId``.
+        server.send_play("held_item_slot", {"slot": 7})
+        async with asyncio.timeout(2):
+            while bot.inventory.held_slot != 7:
+                await asyncio.sleep(0.01)
+        await _stop(bot, task)
+
+        with pytest.raises(ValueError):
+            await bot.select_hotbar(9)
+
+
+async def test_window_click_packets_carry_slot_mode_and_action() -> None:
+    async with FakeServer() as server:
+        bot = await _start_bot(server)
+        task = asyncio.create_task(bot.run())
+        items = [ItemStack() for _ in range(45)]
+        items[36] = ItemStack(item_id=276, count=1)
+        bot.inventory.apply_window_items(0, items)
+
+        first = await bot.click_slot(36)
+        second = await bot.click_slot(36, button=1, mode=1)
+        third = await bot.shift_click_slot(36)
+        fourth = await bot.drop_slot(36, all=True)
+
+        packets = await _wait_for_packets(server, "window_click", count=4)
+        assert [packet.fields["action"] for packet in packets] == [
+            first,
+            second,
+            third,
+            fourth,
+        ]
+        assert [packet.fields["mode"] for packet in packets] == [0, 1, 2, 5]
+        assert packets[0].fields["slot"] == 36
+        assert packets[0].fields["item"].item_id == 276
+
+        with pytest.raises(ValueError):
+            await bot.click_slot(0, window_id=99)
+        await _stop(bot, task)
+
+
+async def test_cursor_set_slot_and_close_window() -> None:
+    bot = Bot("Steve", host="localhost", use_srv=False)
+        
+    task = asyncio.create_task(bot._on_set_slot(Packet(
+        "set_slot",
+        {"windowId": 0, "slot": -1, "item": ItemStack(item_id=1, count=3)},
+        "play",
+        "toClient",
+    )))
+    await task
+    assert bot.inventory.cursor.item_id == 1
+
+    events: list[InventoryChangedEvent] = []
+    bot.events.subscribe(InventoryChangedEvent, events.append)
+    await bot._on_set_slot(Packet(
+        "set_slot",
+        {"windowId": 0, "slot": -1, "item": ItemStack(item_id=4, count=2)},
+        "play",
+        "toClient",
+    ))
+    await asyncio.sleep(0.01)
+    assert events[-1].slot == -2
+
+    bot.inventory.open_window(2, "Chest", 27)
+    await bot._on_close_window(Packet(
+        "close_window", {"windowId": 2}, "play", "toClient"
+    ))
+    assert bot.inventory.window(2) is None
+    assert bot.inventory.cursor.empty
+    await bot.events.aclose()
+
+
+async def test_use_place_and_dig_packets() -> None:
+    async with FakeServer() as server:
+        bot = await _start_bot(server)
+        task = asyncio.create_task(bot.run())
+
+        await bot.use_item()
+        await bot.place_block(BlockPos(1, 64, 2), face=Face.NORTH)
+        await bot.break_block(BlockPos(3, 64, 4), delay=0)
+        await bot.cancel_digging(BlockPos(3, 64, 4))
+
+        places = await _wait_for_packets(server, "block_place", count=2)
+        assert places[0].fields["location"] == {"x": -1, "y": -1, "z": -1}
+        assert places[0].fields["direction"] == -1
+        assert places[1].fields["location"] == {"x": 1, "y": 64, "z": 2}
+        assert places[1].fields["direction"] == int(Face.NORTH)
+
+        digs = await _wait_for_packets(server, "block_dig", count=3)
+        assert [packet.fields["status"] for packet in digs] == [0, 2, 1]
+        assert all(
+            packet.fields["location"] == {"x": 3, "y": 64, "z": 4}
+            for packet in digs
+        )
+        await _stop(bot, task)
 
 
 async def test_player_info_ignores_unknown_updates_and_parses_display_name() -> None:

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from pyflayer.bot.inventory import HOTBAR_START, Inventory
+import pytest
+
+from pyflayer.bot.inventory import HOTBAR_START, Inventory, PLAYER_WINDOW, Window
 from pyflayer.models.items import ItemStack
 
 
@@ -35,6 +37,44 @@ def test_extra_windows_open_close() -> None:
     assert inv.close_window(1) is chest
     assert inv.window(1) is None
     assert inv.close_window(0) is None
+
+
+@pytest.mark.parametrize(
+    ("kind", "container_slots"),
+    [
+        ("minecraft:chest", 27),
+        ("minecraft:trapped_chest", 27),
+        ("minecraft:crafting_table", 10),
+        ("minecraft:furnace", 3),
+        ("minecraft:dispenser", 9),
+        ("minecraft:dropper", 9),
+        ("minecraft:hopper", 5),
+        ("minecraft:beacon", 1),
+        ("minecraft:brewing_stand", 4),
+        ("minecraft:enchanting_table", 2),
+        ("minecraft:anvil", 3),
+        ("minecraft:villager", 3),
+    ],
+)
+def test_container_windows_keep_container_slots_before_player_copy(
+    kind: str, container_slots: int
+) -> None:
+    """Verify container windows correctly report container_slots and accept items."""
+    inv = Inventory()
+    window = inv.open_window(1, kind, container_slots + 36, kind=kind)
+    assert window.kind == kind
+    assert window.container_slots == container_slots
+
+    # Verify items can be set in container slots (first `container_slots` slots)
+    items = [ItemStack() for _ in range(container_slots + 36)]
+    items[0] = ItemStack(item_id=54, count=1)
+    items[container_slots] = ItemStack(item_id=276, count=1)
+    inv.apply_window_items(1, items)
+    assert window.slot(0).item_id == 54
+    assert window.slot(container_slots).item_id == 276
+    # Verify player-inventory copy slots exist (index > container_slots)
+    # Slot 35 is the last player-inventory slot; it may be empty initially
+    assert window.items[container_slots + 35].count == 0
 
 
 def test_clear_resets() -> None:

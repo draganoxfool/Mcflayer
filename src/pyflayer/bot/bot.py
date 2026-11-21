@@ -22,7 +22,15 @@ from dataclasses import dataclass, replace
 from typing import Any
 
 from pyflayer._internal.clock import Clock, MonotonicClock
-from pyflayer.bot.inventory import HOTBAR_START, Inventory
+from pyflayer.bot import interactions as _interactions
+from pyflayer.bot import windows as _windows
+from pyflayer.bot.inventory import (
+    CURSOR_EVENT_SLOT,
+    CURSOR_SLOT,
+    HOTBAR_START,
+    ClickMode,
+    Inventory,
+)
 from pyflayer.bot.movement import MovementPacket, MovementTracker
 from pyflayer.data.loader import McData
 from pyflayer.errors import ConnectionClosed, KickedError, ProtocolError
@@ -51,6 +59,7 @@ from pyflayer.events.catalog import (
     SpawnEvent,
     event_for_name,
 )
+from pyflayer.models.enums import Face
 from pyflayer.models.items import ItemStack
 from pyflayer.models.text import ChatComponent
 from pyflayer.models.vec3 import BlockPos, ChunkPos, Vec3
@@ -418,6 +427,107 @@ class Bot:
         if self.client is None:
             raise ConnectionClosed("not connected")
         await self.client.send_chat(line)
+
+    async def _send_play(self, name: str, fields: dict[str, object]) -> None:
+        """Send one play packet, failing clearly when disconnected."""
+        if self.client is None:
+            raise ConnectionClosed("not connected")
+        await self.client.send_packet(name, fields)
+
+    # ------------------------------------------------------------------ inventory actions
+    async def select_hotbar(self, slot: int) -> None:
+        """Select hotbar slot ``0..8`` (``held_item_slot``)."""
+        await _windows.select_hotbar(self, slot)
+
+    async def click_slot(
+        self,
+        slot: int,
+        *,
+        button: int = 0,
+        mode: int | ClickMode = ClickMode.LEFT,
+        window_id: int = 0,
+        item: ItemStack | None = None,
+    ) -> int:
+        """Send a raw 1.8 ``window_click`` and return its action number.
+
+        ``slot`` is the raw window slot. For every container the container slots come first,
+        followed by the copied player inventory (27 main slots, then 9 hotbar slots). The server
+        answers with ``set_slot``/``window_items``; slot contents are not changed optimistically.
+        """
+        return await _windows.click_slot(
+            self,
+            slot,
+            button=button,
+            mode=mode,
+            window_id=window_id,
+            item=item,
+        )
+
+    async def shift_click_slot(
+        self, slot: int, *, button: int = 0, window_id: int = 0
+    ) -> int:
+        """Shift-click a slot (quick-move between container and inventory)."""
+        return await _windows.shift_click_slot(
+            self, slot, button=button, window_id=window_id
+        )
+
+    async def drop_slot(
+        self, slot: int, *, all: bool = False, window_id: int = 0
+    ) -> int:
+        """Drop one item or the whole stack from a slot."""
+        return await _windows.drop_slot(
+            self, slot, all=all, window_id=window_id
+        )
+
+    async def close_window(self, window_id: int = 0) -> None:
+        """Close a window server-side and drop its local state."""
+        await _windows.close_window(self, window_id)
+
+    # ------------------------------------------------------------------ block and item actions
+    async def swing_arm(self) -> None:
+        """Play the main-hand swing animation (``arm_animation``)."""
+        await _interactions.swing_arm(self)
+
+    async def use_item(self) -> None:
+        """Use the held item without targeting a block."""
+        await _interactions.use_item(self)
+
+    async def place_block(
+        self,
+        pos: BlockPos,
+        *,
+        face: Face | int = Face.UP,
+        cursor: tuple[int, int, int] = (8, 8, 8),
+    ) -> None:
+        """Right-click a block position with the held item (``block_place``)."""
+        await _interactions.place_block(self, pos, face=face, cursor=cursor)
+
+    async def start_digging(self, pos: BlockPos, *, face: Face | int = Face.UP) -> None:
+        """Start breaking a block (``block_dig`` status 0)."""
+        await _interactions.start_digging(self, pos, face=face)
+
+    async def finish_digging(self, pos: BlockPos, *, face: Face | int = Face.UP) -> None:
+        """Finish breaking a block (``block_dig`` status 2)."""
+        await _interactions.finish_digging(self, pos, face=face)
+
+    async def cancel_digging(self, pos: BlockPos, *, face: Face | int = Face.UP) -> None:
+        """Abort a break in progress (``block_dig`` status 1)."""
+        await _interactions.cancel_digging(self, pos, face=face)
+
+    async def break_block(
+        self,
+        pos: BlockPos,
+        *,
+        face: Face | int = Face.UP,
+        delay: float = 0.0,
+    ) -> None:
+        """Send start and finish digging, optionally waiting ``delay`` seconds.
+
+        Survival break time depends on block hardness, tool and effects; this helper does not
+        calculate it. Pass ``delay`` or drive start/finish yourself. Creative mode accepts an
+        immediate finish.
+        """
+        await _interactions.break_block(self, pos, face=face, delay=delay)
 
     async def respawn(self) -> None:
         """Ask the server to respawn the player."""
@@ -1073,10 +1183,13 @@ class Bot:
         item = packet.fields.get("item")
         stack = item if isinstance(item, ItemStack) else ItemStack()
         if self.inventory.apply_set_slot(window_id, slot, stack) is not None:
-            self.events.dispatch(InventoryChangedEvent(window_id, slot, stack))
+            event_slot = CURSOR_EVENT_SLOT if slot == CURSOR_SLOT else slot
+            self.events.dispatch(InventoryChangedEvent(window_id, event_slot, stack))
 
     async def _on_held_item_slot(self, packet: Packet) -> None:
-        slot = int(packet.fields.get("slot", 0))
+        # 1.8 names this field ``slotId``; older fixtures used ``slot``. Accept both so a server
+        # hotbar change is never silently ignored.
+        slot = int(packet.fields.get("slotId", packet.fields.get("slot", 0)))
         self.inventory.set_held_slot(slot)
         self.events.dispatch(
             InventoryChangedEvent(0, HOTBAR_START + self.inventory.held_slot, self.inventory.held_item)
@@ -1085,10 +1198,18 @@ class Bot:
     async def _on_open_window(self, packet: Packet) -> None:
         window_id = int(packet.fields.get("windowId", 0))
         title = ChatComponent.parse(packet.fields.get("windowTitle", "")).plain_text()
-        self.inventory.open_window(window_id, title, int(packet.fields.get("slotCount", 0)))
+        self.inventory.open_window(
+            window_id,
+            title,
+            int(packet.fields.get("slotCount", 0)),
+            kind=str(packet.fields.get("inventoryType", "")),
+        )
 
     async def _on_close_window(self, packet: Packet) -> None:
-        self.inventory.close_window(int(packet.fields.get("windowId", 0)))
+        if self.inventory.close_window(int(packet.fields.get("windowId", 0))) is not None:
+            # The cursor belongs to the closed window; the server returns it to the inventory and
+            # sends new slot contents. Keeping the old cursor would double-count it locally.
+            self.inventory.cursor = ItemStack()
 
     async def _on_experience(self, packet: Packet) -> None:
         self.experience = (
