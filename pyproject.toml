@@ -1,0 +1,87 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcflayer"
+version = "0.8.0"
+description = "asyncio Minecraft Java Edition bot library - transport, data, codecs, login and events"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "PyFlayer contributors" }]
+dependencies = [
+  "numpy>=1.26",
+  "msgspec>=0.18",
+  "cryptography>=42",
+  "httpx>=0.27",
+  "dnspython>=2.6",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "hypothesis>=6.100",
+  "ruff>=0.5",
+  "mypy>=1.10",
+  "pyright>=1.1.360",
+  "import-linter>=2.0",
+]
+
+[project.scripts]
+pyflayer-status = "pyflayer.protocol.status:main"
+pyflayer-connect = "pyflayer.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyflayer"]
+
+# Ship the vendored minecraft-data subset inside the wheel; default_data_dir() looks here.
+[tool.hatch.build.targets.wheel.force-include]
+"data" = "pyflayer/_data"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src",
+  "data",
+  "tests",
+  "docs",
+  "examples",
+  "README.md",
+  "mkdocs.yml",
+  "requirements-docs.txt",
+  ".importlinter",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["pyflayer"]
+mypy_path = "src"
+plugins = []
+
+[tool.pyright]
+pythonVersion = "3.11"
+include = ["src"]
+typeCheckingMode = "strict"
+
+[tool.coverage.run]
+source = ["pyflayer"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90

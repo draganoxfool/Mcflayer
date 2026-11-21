@@ -1,0 +1,15 @@
+[importlinter]
+root_package = pyflayer
+
+[importlinter:contract:layers]
+name = PyFlayer layer map (ADR-2)
+type = layers
+layers =
+    pyflayer.ext | pyflayer.swarm
+    pyflayer.actions | pyflayer.pathfinder
+    pyflayer.physics
+    pyflayer.world
+    pyflayer.bot
+    pyflayer.protocol
+    pyflayer.data | pyflayer.events
+    pyflayer.models | pyflayer._internal | pyflayer.errors

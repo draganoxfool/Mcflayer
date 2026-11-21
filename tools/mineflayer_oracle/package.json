@@ -1,0 +1,13 @@
+{
+  "name": "pyflayer-physics-oracle",
+  "private": true,
+  "description": "Regenerates tests/fixtures/physics_oracle.json from prismarine-physics",
+  "scripts": {
+    "generate": "node physics_traces.js > ../../tests/fixtures/physics_oracle.json"
+  },
+  "dependencies": {
+    "minecraft-data": "3.75.0",
+    "prismarine-physics": "1.11.1",
+    "vec3": "^0.1.10"
+  }
+}

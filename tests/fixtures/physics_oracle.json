@@ -1,0 +1,3057 @@
+{
+ "source": "prismarine-physics 1.11.1 + minecraft-data 3.75.0",
+ "version": "1.8.9",
+ "generatedBy": "tools/mineflayer_oracle/physics_traces.js",
+ "traces": [
+  {
+   "name": "walk_flat",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64,
+      8.598000039
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.053508021
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.67110806
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.066528299
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.835636397
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.089832472
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.023468908
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.102556551
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.224025498
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.109503898
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.431529434
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.113297149
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.642826622
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.115368265
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.856194925
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.116499093
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.070694057
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117116526
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.285810622
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117453644
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.501264304
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117637711
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.716902054
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117738211
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.932640303
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117793084
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.148433426
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117823045
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.36425651
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117839404
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.580095952
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117848335
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.795944326
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117853212
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.011797577
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117855875
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.22765349
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117857329
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.443510857
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.117858123
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    }
+   ]
+  },
+  {
+   "name": "sprint_flat",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64,
+      8.62740005
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.069560427
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.722440477
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.086486789
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.936327316
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.116782214
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.180509581
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.133323516
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.441233147
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.142355067
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.710988264
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.147286294
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.985674608
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.149978744
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.263053402
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.151448822
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.541902274
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.152251484
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.821553808
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.152689738
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.101643596
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.152929024
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.38197267
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.153059674
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.662432394
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.15313101
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.942963454
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.153169959
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.223533463
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.153191225
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.504124738
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.153202836
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.784727624
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.153209176
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      13.06533685
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.153212637
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      13.345949537
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.153214527
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      13.626564115
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.153215559
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    }
+   ]
+  },
+  {
+   "name": "sneak_flat",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64,
+      8.529400012
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.016052406
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.551332418
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.01995849
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.600690919
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.026949742
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.657040672
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.030766965
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.717207649
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.032851169
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.77945883
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.033989145
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.842847987
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.034610479
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.906858477
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.034949728
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.971208217
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035134958
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.035743186
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035236093
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.100379291
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035291313
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.165070616
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035321463
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.229792091
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035337925
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.294530028
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035346914
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.359276953
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035351821
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.424028786
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035354501
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.488783298
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035355964
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.553539273
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035356762
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.618296047
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035357199
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.683053257
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.035357437
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    }
+   ]
+  },
+  {
+   "name": "jump",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64.419999987,
+      8.5
+     ],
+     "vel": [
+      0,
+      0.333199994,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64.753199981,
+      8.5
+     ],
+     "vel": [
+      0,
+      0.248135999,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.001335979,
+      8.5
+     ],
+     "vel": [
+      0,
+      0.164773282,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.166109261,
+      8.5
+     ],
+     "vel": [
+      0,
+      0.083077818,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.249187079,
+      8.5
+     ],
+     "vel": [
+      0,
+      0.003016262,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.25220334,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.075444065,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.176759275,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.152335187,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.024424088,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.227688488,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64.796735601,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.301534724,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64.495200877,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.373904036,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64.121296841,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.444825964,
+      0
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    }
+   ]
+  },
+  {
+   "name": "sprint_jump",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64.419999987,
+      8.82740005
+     ],
+     "vel": [
+      0,
+      0.333199994,
+      0.178760427
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64.753199981,
+      9.031640477
+     ],
+     "vel": [
+      0,
+      0.248135999,
+      0.185858789
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.001335979,
+      9.242979266
+     ],
+     "vel": [
+      0,
+      0.164773282,
+      0.192318298
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.166109261,
+      9.460777564
+     ],
+     "vel": [
+      0,
+      0.083077818,
+      0.198196451
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.249187079,
+      9.684454015
+     ],
+     "vel": [
+      0,
+      0.003016262,
+      0.20354557
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.25220334,
+      9.913479586
+     ],
+     "vel": [
+      0,
+      -0.075444065,
+      0.208413269
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.176759275,
+      10.147372855
+     ],
+     "vel": [
+      0,
+      -0.152335187,
+      0.212842875
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      65.024424088,
+      10.38569573
+     ],
+     "vel": [
+      0,
+      -0.227688488,
+      0.216873816
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64.796735601,
+      10.628049546
+     ],
+     "vel": [
+      0,
+      -0.301534724,
+      0.220541973
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64.495200877,
+      10.874071519
+     ],
+     "vel": [
+      0,
+      -0.373904036,
+      0.223879995
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64.121296841,
+      11.123431514
+     ],
+     "vel": [
+      0,
+      -0.444825964,
+      0.226917596
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.37582911
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.229681812
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.732910972
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.194966697
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.055277718
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.176012244
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.358690012
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.165663112
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.651753175
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.160012487
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      12.939165712
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.156927245
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      13.223493007
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.155242703
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      13.50613576
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.154322943
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      13.787858753
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.153820754
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    }
+   ]
+  },
+  {
+   "name": "ice",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64,
+      8.522490638
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.020057151
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.562147788
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.036088007
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.620726433
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.052240436
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.695457507
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.066645171
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.784593316
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.079491314
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.886575268
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.090947505
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.00001341
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.101164136
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.123668184
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.110275327
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.256434148
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.118400687
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.397325473
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.125646884
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.545462995
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.132109042
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.700062674
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.137871994
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.860425306
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.143011395
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.025927339
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.147594713
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.196012689
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.151682116
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.370185443
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.155327261
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.548003342
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.158578003
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.729071982
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.161477013
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.913039633
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.164062351
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.099592622
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.166367956
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    }
+   ]
+  },
+  {
+   "name": "slime",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64,
+      8.541343766
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.030098262
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.591042028
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.045225418
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.677611213
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.063022366
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.781977345
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.075978545
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.899299656
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.085410642
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.026054064
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.092277209
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.15967504
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.09727607
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.298294877
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.100915241
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.440553884
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.103564557
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.585462207
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.10549326
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.732299233
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.106897355
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.880540354
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.107919536
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.029803657
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.108663684
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.179811107
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.109205424
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.330360297
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.10959981
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.481303874
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.109886924
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.632534564
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.110095942
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.783974273
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.110248108
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.935566147
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.110358884
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      11.087268797
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.11043953
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    }
+   ]
+  },
+  {
+   "name": "cobweb",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64,
+      8.598000039
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0.053508021
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.616277044
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.640777053
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.665277063
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.689777073
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.714277082
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.738777092
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.763277102
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.787777111
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.812277121
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.83677713
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.86127714
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.88577715
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.910277159
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.934777169
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.959277179
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.983777188
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.008277198
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.032777208
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.057277217
+     ],
+     "vel": [
+      0,
+      -0.078400002,
+      0
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": false
+    }
+   ]
+  },
+  {
+   "name": "water",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5196
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.01568
+     ],
+     "onGround": false,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.55488
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.028224
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.602704
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.0382592
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.6605632
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.04628736
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.72645056
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.052709888
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.798760448
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.05784791
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.876208358
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.061958328
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.957766687
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.065246663
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.042613349
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.06787733
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.13009068
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.069981864
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.219672544
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.071665491
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.310938035
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.073012393
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.403550428
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.074089914
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.497240342
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.074951932
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.591792274
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.075641545
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.687033819
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.076193236
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.782827055
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.076634589
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.879061644
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.076987671
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.975649315
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.077270137
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      10.072519452
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.07749611
+     ],
+     "onGround": true,
+     "inWater": true,
+     "inLava": false
+    }
+   ]
+  },
+  {
+   "name": "lava",
+   "trace": [
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5196
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.0098
+     ],
+     "onGround": false,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.549
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.0147
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.5833
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.01715
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.62005
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.018375
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.658025
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.0189875
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.6966125
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.01929375
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.73550625
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019446875
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.774553125
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019523437
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.813676563
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019561719
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.852838281
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019580859
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.892019141
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.01959043
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.93120957
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019595215
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      8.970404785
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019597607
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.009602393
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019598804
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.048801196
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019599402
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.088000598
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019599701
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.127200299
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.01959985
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.16640015
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019599925
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.205600075
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019599963
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    },
+    {
+     "pos": [
+      8.5,
+      64,
+      9.244800037
+     ],
+     "vel": [
+      0,
+      -0.02,
+      0.019599981
+     ],
+     "onGround": true,
+     "inWater": false,
+     "inLava": true
+    }
+   ]
+  }
+ ]
+}

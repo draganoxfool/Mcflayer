@@ -1,0 +1,13 @@
+# Vendored data notice
+
+`data/pc/1.8/` contains a small, pinned subset of
+[PrismarineJS/minecraft-data](https://github.com/PrismarineJS/minecraft-data), fetched from `master`
+on 2026-11-20. `minecraft-data` is distributed under the MIT license (see its `package.json` and the
+upstream repository); this notice is kept so the provenance is never lost.
+
+Only the files needed for the M1 data loader and codec compiler are included. The upstream
+`version.json` reports `minecraftVersion: 1.8.8` and `version: 47`; Minecraft 1.8.9 uses the same
+protocol and data, so docs refer to the reference target as **1.8.9 / protocol 47**.
+
+To support another version, add its `pc/<version>` files and an entry in `data/dataPaths.json`, or
+point `PYFLAYER_DATA_DIR` at a full `minecraft-data/data` checkout.
