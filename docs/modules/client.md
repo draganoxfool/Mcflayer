@@ -9,7 +9,7 @@ login handshake, encryption, compression and the Play packet iterator; it has no
 from pyflayer.protocol import ProtocolClient
 
 client = ProtocolClient("play.pika-network.net", "Steve")
-session = await client.connect()      # handshake -> login -> PLAY
+session = await client.connect()  # handshake -> login -> PLAY
 try:
     async for packet in client.packets():
         if packet.name == "chat":

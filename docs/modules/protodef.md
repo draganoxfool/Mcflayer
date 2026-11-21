@@ -13,14 +13,15 @@ from pyflayer.protocol import PacketRegistry
 registry = PacketRegistry(McData.load("1.8.9"))
 
 payload = registry.encode(
-    "handshaking", "toServer", "set_protocol",
-    {"protocolVersion": 47, "serverHost": "localhost",
-     "serverPort": 25565, "nextState": 1},
+    "handshaking",
+    "toServer",
+    "set_protocol",
+    {"protocolVersion": 47, "serverHost": "localhost", "serverPort": 25565, "nextState": 1},
 )
 # b'\x00\x2f\x09localhost\x63\xdd\x01'
 
 packet = registry.decode("handshaking", "toServer", payload)
-packet.name    # 'set_protocol'
+packet.name  # 'set_protocol'
 packet.fields  # dict of decoded fields
 ```
 
@@ -57,9 +58,9 @@ codec in `protocol/native/entity_metadata.py`.
 
 ```python
 report = registry.compiler.compile_state("play", "toClient")
-report.ok             # True
-report.compiled       # list[str] of 74 names
-report.unsupported    # {}
+report.ok  # True
+report.compiled  # list[str] of 74 names
+report.unsupported  # {}
 ```
 
 ## 1.8 specifics handled by the compiler

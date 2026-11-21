@@ -5,7 +5,8 @@ Version differences are expressed through :class:`Features`:
 * 1.8-1.12: ``i16 item_id`` (``-1`` = empty), ``i8 count``, ``i16 damage``, named NBT.
 * 1.13-1.20.4: ``VarInt item_id`` (``0`` = empty), ``i8 count``, NBT (nameless from 1.20.2).
 * 1.20.5+: structured item components are not implemented in M1; decoding raises
-  :class:`~pyflayer.errors.UnsupportedType` with a pointer to the ``protocol/native`` extension point.
+    :class:`~pyflayer.errors.UnsupportedType` with a pointer to the
+    ``protocol/native`` extension point.
 """
 
 from __future__ import annotations

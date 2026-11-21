@@ -5,7 +5,15 @@ small block updates; the bot keeps the current dimension in `Bot.world`, entitie
 and inventory windows in `Bot.inventory`.
 
 ```python
-from pyflayer.world import World, WorldSnapshot, ChunkColumn, ChunkSection, BlockState, EntityTracker, Entity
+from pyflayer.world import (
+    World,
+    WorldSnapshot,
+    ChunkColumn,
+    ChunkSection,
+    BlockState,
+    EntityTracker,
+    Entity,
+)
 ```
 
 

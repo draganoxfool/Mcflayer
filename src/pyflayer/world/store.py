@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pyflayer.models.vec3 import BlockPos, ChunkPos
 from pyflayer.world.chunk import ChunkColumn
 
-__all__ = ["WorldKey", "ChunkStore"]
+__all__ = ["ChunkStore", "WorldKey"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,7 +26,7 @@ class WorldKey:
 class ChunkStore:
     """Refcounted chunk storage with idempotent block updates."""
 
-    __slots__ = ("key", "_chunks", "_refs")
+    __slots__ = ("_chunks", "_refs", "key")
 
     def __init__(self, key: WorldKey) -> None:
         self.key = key

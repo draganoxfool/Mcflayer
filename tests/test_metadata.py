@@ -5,6 +5,7 @@ import uuid
 import pytest
 
 from pyflayer.data import McData
+from pyflayer.errors import MalformedPacket
 from pyflayer.models.items import ItemStack
 from pyflayer.protocol.buffer import PacketReader, PacketWriter
 from pyflayer.protocol.native.entity_metadata import EntityMetadataLoopCodec
@@ -16,11 +17,11 @@ MC = McData.load("1.8.9")
 def test_metadata_roundtrip_all_types() -> None:
     codec = EntityMetadataLoopCodec()
     metadata = {
-        0: (0, 1),          # byte
-        1: (1, -2),         # short
-        2: (2, 300),        # int
-        3: (3, 1.5),        # float
-        4: (4, "hello"),    # string
+        0: (0, 1),  # byte
+        1: (1, -2),  # short
+        2: (2, 300),  # int
+        3: (3, 1.5),  # float
+        4: (4, "hello"),  # string
         5: (5, ItemStack(item_id=1, count=1)),
         6: (6, (1, 2, 3)),  # vector int
         7: (7, (1.0, 2.0, 3.0)),
@@ -39,7 +40,7 @@ def test_metadata_roundtrip_all_types() -> None:
 
 def test_metadata_requires_terminator() -> None:
     codec = EntityMetadataLoopCodec()
-    with pytest.raises(Exception):
+    with pytest.raises(MalformedPacket):
         codec.read(PacketReader(b"\x20\x01"), {})
 
 

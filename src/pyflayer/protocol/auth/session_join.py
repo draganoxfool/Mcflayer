@@ -20,7 +20,7 @@ import httpx
 from pyflayer.errors import AuthError
 from pyflayer.protocol.auth.base import Session
 
-__all__ = ["SESSIONSERVER_JOIN", "server_hash", "join_session"]
+__all__ = ["SESSIONSERVER_JOIN", "join_session", "server_hash"]
 
 SESSIONSERVER_JOIN = "https://sessionserver.mojang.com/session/minecraft/join"
 
@@ -46,7 +46,7 @@ async def join_session(
     digest: str,
     *,
     client: httpx.AsyncClient | None = None,
-    timeout: float = 15.0,
+    timeout: float = 15.0,  # noqa: ASYNC109 - public HTTP timeout option
 ) -> None:
     """Ask the Mojang session server to register a join.
 
@@ -60,7 +60,9 @@ async def join_session(
         AuthError: When the session is offline or the session server rejects the join.
     """
     if not session.access_token:
-        raise AuthError("cannot join a session server with an offline session", username=session.username)
+        raise AuthError(
+            "cannot join a session server with an offline session", username=session.username
+        )
     payload: dict[str, Any] = {
         "accessToken": session.access_token,
         "selectedProfile": session.uuid_no_dashes,

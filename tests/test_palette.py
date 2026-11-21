@@ -54,7 +54,9 @@ def test_index_bounds() -> None:
         box.with_set(-1, 1)
 
 
-def _container_bytes(bits: int, palette: list[int], values: list[int], *, spanning: bool = False) -> bytes:
+def _container_bytes(
+    bits: int, palette: list[int], values: list[int], *, spanning: bool = False
+) -> bytes:
     count = len(values)
     if spanning:
         total_bits = count * bits
@@ -91,7 +93,12 @@ def test_decode_non_spanning() -> None:
     box = PalettedContainer.decode(PacketReader(raw), size=4096)
     assert box.kind is ContainerKind.INDIRECT
     assert [box.get(index) for index in (0, 1, 15, 16, 17, 4095)] == [
-        values[0], values[1], values[15], values[16], values[17], values[4095]
+        values[0],
+        values[1],
+        values[15],
+        values[16],
+        values[17],
+        values[4095],
     ]
 
 

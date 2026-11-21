@@ -16,37 +16,37 @@ from __future__ import annotations
 from typing import Any, Final
 
 __all__ = [
-    "PyFlayerError",
-    "ProtocolError",
-    "MalformedPacket",
-    "UnknownPacket",
-    "FramingError",
-    "CompressionError",
-    "StateError",
-    "UnsupportedVersion",
-    "UnsupportedType",
-    "ConnectionClosed",
-    "AuthError",
-    "LoginRejected",
-    "KickedError",
-    "DataError",
-    "MissingRegistryEntry",
-    "WorldError",
-    "ChunkNotLoaded",
-    "OutOfWorldBounds",
-    "ActionError",
     "ActionBusy",
-    "ActionPreempted",
     "ActionCancelled",
+    "ActionError",
     "ActionFailed",
-    "LeaseRevoked",
-    "PathError",
-    "NoPath",
-    "PathTimeout",
-    "ExtensionError",
-    "ExtensionNotLoaded",
-    "ExtensionFailed",
+    "ActionPreempted",
+    "AuthError",
+    "ChunkNotLoaded",
+    "CompressionError",
+    "ConnectionClosed",
+    "DataError",
     "ExtensionAlreadyLoaded",
+    "ExtensionError",
+    "ExtensionFailed",
+    "ExtensionNotLoaded",
+    "FramingError",
+    "KickedError",
+    "LeaseRevoked",
+    "LoginRejected",
+    "MalformedPacket",
+    "MissingRegistryEntry",
+    "NoPath",
+    "OutOfWorldBounds",
+    "PathError",
+    "PathTimeout",
+    "ProtocolError",
+    "PyFlayerError",
+    "StateError",
+    "UnknownPacket",
+    "UnsupportedType",
+    "UnsupportedVersion",
+    "WorldError",
 ]
 
 
@@ -109,7 +109,9 @@ class CompressionError(ProtocolError):
 class StateError(ProtocolError):
     """An illegal connection-state transition was attempted."""
 
-    def __init__(self, message: str, *, current: object = None, target: object = None, **kwargs: Any) -> None:
+    def __init__(
+        self, message: str, *, current: object = None, target: object = None, **kwargs: Any
+    ) -> None:
         super().__init__(message, current=current, target=target, **kwargs)
 
 
@@ -148,7 +150,9 @@ class AuthError(PyFlayerError):
 class LoginRejected(PyFlayerError):
     """The server refused the login and supplied a reason component."""
 
-    def __init__(self, message: str = "login rejected", *, reason: object = None, **fields: Any) -> None:
+    def __init__(
+        self, message: str = "login rejected", *, reason: object = None, **fields: Any
+    ) -> None:
         super().__init__(message, reason=reason, **fields)
 
 
@@ -180,7 +184,9 @@ class WorldError(PyFlayerError):
 class ChunkNotLoaded(WorldError):
     """A block was requested in a chunk that is not loaded."""
 
-    def __init__(self, message: str = "chunk not loaded", *, pos: object = None, **fields: Any) -> None:
+    def __init__(
+        self, message: str = "chunk not loaded", *, pos: object = None, **fields: Any
+    ) -> None:
         super().__init__(message, pos=pos, **fields)
 
 

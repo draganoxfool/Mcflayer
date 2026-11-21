@@ -17,7 +17,8 @@ Examples:
 from __future__ import annotations
 
 import struct
-from typing import Callable, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 from pyflayer.data.features import Features
 from pyflayer.errors import MalformedPacket
@@ -39,7 +40,7 @@ DEFAULT_MAX_STRING_CHARS = 32767
 class PacketReader:
     """Bounds-checked reader over a bytes-like packet payload."""
 
-    __slots__ = ("_view", "_offset", "_limit", "features", "packet_name")
+    __slots__ = ("_limit", "_offset", "_view", "features", "packet_name")
 
     def __init__(
         self,

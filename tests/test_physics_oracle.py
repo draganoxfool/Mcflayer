@@ -27,9 +27,7 @@ def _state_id(name: str, metadata: int = 0) -> int:
     return (MC.blocks[name].id << 4) | metadata
 
 
-def make_world(
-    *, floor: str = "stone", layers: tuple[tuple[str, int, int], ...] = ()
-) -> World:
+def make_world(*, floor: str = "stone", layers: tuple[tuple[str, int, int], ...] = ()) -> World:
     world = World(MC)
     column = ChunkColumn(ChunkPos(0, 0))
     for x in range(16):
@@ -53,9 +51,7 @@ def controls_for(name: str) -> Callable[[int], ControlState]:
     if name == "jump":
         return lambda tick: ControlState(jump=tick == 0, yaw=0)
     if name == "sprint_jump":
-        return lambda tick: ControlState(
-            forward=1, sprint=True, jump=tick == 0, yaw=0
-        )
+        return lambda tick: ControlState(forward=1, sprint=True, jump=tick == 0, yaw=0)
     return lambda _: ControlState(forward=1, yaw=0)
 
 
@@ -80,9 +76,7 @@ def oracle() -> dict[str, list[dict[str, object]]]:
 
 
 @pytest.mark.parametrize("name", sorted(CASES))
-def test_matches_prismarine_physics(
-    oracle: dict[str, list[dict[str, object]]], name: str
-) -> None:
+def test_matches_prismarine_physics(oracle: dict[str, list[dict[str, object]]], name: str) -> None:
     world = make_world(**CASES[name])  # type: ignore[arg-type]
     engine = PhysicsEngine()
     state = PlayerState(Vec3(8.5, 64.0, 8.5), on_ground=True)
@@ -93,7 +87,7 @@ def test_matches_prismarine_physics(
         state = engine.step(state, controls(tick), world)
         actual = (state.position.x, state.position.y, state.position.z)
         reference = expected["pos"]
-        error = max(abs(a - b) for a, b in zip(actual, reference))  # type: ignore[arg-type]
+        error = max(abs(a - b) for a, b in zip(actual, reference, strict=True))  # type: ignore[arg-type]
         max_error = max(max_error, error)
         assert error <= TOLERANCE, f"{name}: tick {tick} position error {error}"
 

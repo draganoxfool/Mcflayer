@@ -14,8 +14,8 @@ There's no way to record a sequence of actions (clicks, chats, item uses) and re
 ### Proposed API
 ```python
 # Record a macro while you play manually
-bot.start_macro_recording()   # starts capturing window clicks, chats, item uses
-bot.stop_macro_recording()    # stops and saves the macro
+bot.start_macro_recording()  # starts capturing window clicks, chats, item uses
+bot.stop_macro_recording()  # stops and saves the macro
 
 # Replay the macro
 bot.replay_macro("macros/bed_break.py")  # replays a recorded bed-breaking sequence
@@ -24,8 +24,7 @@ bot.replay_macro("macros/bed_break.py")  # replays a recorded bed-breaking seque
 bot.replay_macro("macros/chest_open.py", count=28)  # open chest 28 times
 
 # Macro with hooks
-bot.replay_macro("macros/craft_table.py", 
-                 on_step=lambda n: print(f"step {n}"))
+bot.replay_macro("macros/craft_table.py", on_step=lambda n: print(f"step {n}"))
 ```
 
 ### Design Notes
@@ -80,20 +79,20 @@ No high-level combat automation: targeting, attack cycling, enchanted tool usage
 ### Proposed API
 ```python
 # Attack the nearest entity in range
-bot.attack_nearest(range=32)  
+bot.attack_nearest(range=32)
 
 # Attack a specific entity by name/UUID
-bot.attack_entity(uuid="uuid-here")  
+bot.attack_entity(uuid="uuid-here")
 
 # Auto-attack loop with interval
 bot.start_attack_loop(interval=0.5)  # attacks every 0.5s
-bot.stop_attack_loop()  
+bot.stop_attack_loop()
 
 # Use best available weapon on target
-bot.use_best_weapon(target_entity)  
+bot.use_best_weapon(target_entity)
 
 # Toggle PvP mode (critical hits, no critical hits)
-bot.set_pvp_mode("critical")  
+bot.set_pvp_mode("critical")
 bot.set_pvp_mode("normal")
 ```
 
@@ -117,6 +116,7 @@ No way to auto-respond to chat commands or listen for specific patterns.
 async def on_chat(event: ChatEvent):
     if event.message.content.startswith("/hello"):
         await bot.chat("hi there!")
+
 
 # Filter commands by prefix
 bot.listen_for_command("/heal", response="/heal accepted")
@@ -153,9 +153,9 @@ bot.brew_potion(
     ingredients=["minecraft:nether_wart", "minecraft:blaze_powder"],
     effects=[
         {"type": "minecraft:strength", "duration": 200, "amplifier": 1},
-        {"type": "minecraft:speed", "duration": 180, "amplifier": 0}
+        {"type": "minecraft:speed", "duration": 180, "amplifier": 0},
     ],
-    secondary=False  # no redstone/glowstone
+    secondary=False,  # no redstone/glowstone
 )
 
 # Check if bot has a potion effect
@@ -232,7 +232,7 @@ No API to use anvors: rename items, combine enchantments, repair items.
 bot.rename_anvil(item, new_name="Sharpness V Sword")
 
 # Combine two items (keep enchantments from both)
-bot.combine_anvil(item_a, item_b)  
+bot.combine_anvil(item_a, item_b)
 
 # Repair item with matching material
 bot.repair_anvil(item, material="minecraft:iron_ingot")  # uses ingots as currency
@@ -265,8 +265,8 @@ No API to set up and activate beacons with pyramid levels.
 # Set the beacon primary power
 bot.set_beacon_power(
     beacon_pos,
-    primary_effect="minecraft:speed",   # speed, haste, jump, etc.
-    pyramid_level=4  # 1-4, requires proper pyramid
+    primary_effect="minecraft:speed",  # speed, haste, jump, etc.
+    pyramid_level=4,  # 1-4, requires proper pyramid
 )
 
 # Check beacon status
@@ -309,7 +309,7 @@ bot.rise_to_height(target_y=128, speed=0.5)
 is_flying = bot.is_flying()
 
 # Toggle creative/flying (if permissions allow)
-bot.set_creative_mode(True)  
+bot.set_creative_mode(True)
 bot.set_survival_mode()
 ```
 
@@ -338,10 +338,10 @@ No API to manage off-hand items (totems of undying, shields, building blocks).
 off_hand = bot.off_hand_slot()  # returns slot index or None
 
 # Equip item to off-hand from hotbar
-bot.to_off_hand(hotbar_slot)  
+bot.to_off_hand(hotbar_slot)
 
 # Equip item to main hand from off-hand
-bot.to_main_hand()  
+bot.to_main_hand()
 
 # Use off-hand item (totem, shield block)
 bot.use_off_hand()  # click/use the off-hand item
@@ -443,10 +443,10 @@ No API for multiple bots to coordinate (share resources, avoid conflicts, divide
 coordinator = bot.coordinator(task_count=4)  # 4 bots working together
 
 # Assign each bot a task
-bot.set_task("mine")     # bot mines
-bot.set_task("farm")     # bot farms
-bot.set_task("craft")    # bot crafts
-bot.set_task("trade")    # bot trades
+bot.set_task("mine")  # bot mines
+bot.set_task("farm")  # bot farms
+bot.set_task("craft")  # bot crafts
+bot.set_task("trade")  # bot trades
 
 # Check if task is assigned to this bot
 my_task = bot.my_task()  # returns "mine", "farm", etc.
@@ -568,10 +568,13 @@ bot.enchant_item(enchant_table_window, item_slot, level_target=5)  # tries for l
 bot.rename_after_enchant(item, new_name="My Sword")
 
 # Combine enchants via anvil
-bot.anvil_chain([
-    {"item": "sword", "enchant": "sharpness"},
-    {"item": "book", "enchant": "unbreaking"},
-], target_name="Ultimate Sword")
+bot.anvil_chain(
+    [
+        {"item": "sword", "enchant": "sharpness"},
+        {"item": "book", "enchant": "unbreaking"},
+    ],
+    target_name="Ultimate Sword",
+)
 
 # Check enchantability
 is_enchantable = bot.is_enchantable(enchant_table_window, item_slot)
@@ -599,12 +602,15 @@ No API to automate brewing stands: ingredient addition, progress monitoring, out
 ### Proposed API
 ```python
 # Start brewing with ingredients
-bot.brew_stand_start(stand_window, ingredients=[
-    "minecraft:nether_wart",      # always needed
-    "minecraft:blaze_powder",     # fuel
-    "minecraft:nether_stalk",     # primary ingredient
-    "minecraft:sugar",            # secondary
-])
+bot.brew_stand_start(
+    stand_window,
+    ingredients=[
+        "minecraft:nether_wart",  # always needed
+        "minecraft:blaze_powder",  # fuel
+        "minecraft:nether_stalk",  # primary ingredient
+        "minecraft:sugar",  # secondary
+    ],
+)
 
 # Check brewing progress
 progress = bot.brewing_progress(stand_window)  # 0.0 to 1.0

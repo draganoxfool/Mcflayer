@@ -31,7 +31,7 @@ session = Session(
     access_token=None,
     xuid=None,
 )
-print(session.online)          # False
+print(session.online)  # False
 print(session.uuid_no_dashes)  # b50ad385829d3141a2167e7d7539ba7f
 ```
 
@@ -50,11 +50,9 @@ The protocol implemented by all providers.
 
 ```python
 class MyAuth:
-    async def login(self) -> Session:
-        ...
+    async def login(self) -> Session: ...
 
-    async def join(self, session: Session, *, server_hash: str) -> None:
-        ...
+    async def join(self, session: Session, *, server_hash: str) -> None: ...
 ```
 
 | Method | Meaning |

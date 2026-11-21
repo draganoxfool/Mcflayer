@@ -15,13 +15,13 @@ from typing import BinaryIO
 from pyflayer.errors import ConnectionClosed, MalformedPacket
 
 __all__ = [
-    "encode_varint",
     "decode_varint",
-    "encode_varlong",
     "decode_varlong",
+    "encode_varint",
+    "encode_varlong",
     "read_varint",
-    "read_varlong",
     "read_varint_sync",
+    "read_varlong",
     "read_varlong_sync",
 ]
 
@@ -107,7 +107,7 @@ async def read_varlong(reader: object) -> int:
 
 
 async def _read_async(reader: object, max_bytes: int, name: str) -> int:
-    readexactly = getattr(reader, "readexactly")
+    readexactly = reader.readexactly
     result = 0
     for i in range(max_bytes):
         try:

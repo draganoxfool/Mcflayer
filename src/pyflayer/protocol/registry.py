@@ -1,8 +1,8 @@
 """Packet registry: ``(state, direction) -> id <-> name <-> codec``.
 
 The registry compiles lazily and caches one :class:`~pyflayer.protocol.protodef.PacketCodec` per
-state/direction. Unknown ids raise :class:`~pyflayer.errors.UnknownPacket` carrying the raw body; the
-decision to treat that as fatal belongs to the connection state machine (M2), not here.
+state/direction. Unknown ids raise :class:`~pyflayer.errors.UnknownPacket` carrying the raw body;
+the decision to treat that as fatal belongs to the connection state machine (M2), not here.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ __all__ = ["PacketRegistry"]
 class PacketRegistry:
     """Registry of packet codecs for one data snapshot."""
 
-    __slots__ = ("mc", "compiler", "_codecs", "_native")
+    __slots__ = ("_codecs", "_native", "compiler", "mc")
 
     def __init__(
         self,

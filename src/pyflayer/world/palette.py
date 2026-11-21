@@ -141,11 +141,11 @@ class PalettedContainer:
         indices = self.indices.astype(dtype, copy=True)
         indices[index] = slot
         indices.setflags(write=False)
-        return PalettedContainer(
-            ContainerKind.INDIRECT, bits, tuple(palette), indices, self.size
-        )
+        return PalettedContainer(ContainerKind.INDIRECT, bits, tuple(palette), indices, self.size)
 
-    def with_sets(self, items: list[tuple[int, int]] | tuple[tuple[int, int], ...]) -> PalettedContainer:
+    def with_sets(
+        self, items: list[tuple[int, int]] | tuple[tuple[int, int], ...]
+    ) -> PalettedContainer:
         """Apply several changes, copying at most once per call."""
         result = self
         for index, value in items:

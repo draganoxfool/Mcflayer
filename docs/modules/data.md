@@ -7,10 +7,10 @@ per `(version key, data directory)`.
 from pyflayer.data import McData
 
 mc = McData.load("1.8.9")
-mc.version.protocol            # 47
-mc.blocks["stone"].id          # 1
-mc.blocks.state_id("stone")    # 16  (legacy (id << 4) | meta)
-mc.shapes.boxes_for("stone")   # (AABB(0,0,0,1,1,1),)
+mc.version.protocol  # 47
+mc.blocks["stone"].id  # 1
+mc.blocks.state_id("stone")  # 16  (legacy (id << 4) | meta)
+mc.shapes.boxes_for("stone")  # (AABB(0,0,0,1,1,1),)
 ```
 
 ## Data directory resolution
@@ -41,7 +41,7 @@ All registries support `name`, `id`, `"minecraft:"` prefix stripping, `get(defau
 1.8 has no global block-state ids. mcflayer exposes:
 
 ```python
-state_id = mc.blocks.legacy_state_id(block.id, metadata)   # (block_id << 4) | meta
+state_id = mc.blocks.legacy_state_id(block.id, metadata)  # (block_id << 4) | meta
 block, meta = mc.blocks.from_legacy_state_id(state_id)
 ```
 
@@ -55,8 +55,8 @@ registry data is still deferred.
 `ShapeTable` precomputes `AABB` tuples:
 
 ```python
-mc.shapes.boxes_for("stone")             # full cube
-mc.shapes.boxes_for("air")               # ()
+mc.shapes.boxes_for("stone")  # full cube
+mc.shapes.boxes_for("air")  # ()
 mc.collision_boxes(mc.blocks.state_id("stone"))
 ```
 

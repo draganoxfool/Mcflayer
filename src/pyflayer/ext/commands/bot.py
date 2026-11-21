@@ -19,7 +19,9 @@ from pyflayer.bot import Bot as _BaseBot
 from pyflayer.events.catalog import ChatEvent, event_for_name
 from pyflayer.ext.commands.cog import Cog
 from pyflayer.ext.commands.context import Context
-from pyflayer.ext.commands.core import Command, Group, command as _command, group as _group
+from pyflayer.ext.commands.core import Command, Group
+from pyflayer.ext.commands.core import command as _command
+from pyflayer.ext.commands.core import group as _group
 from pyflayer.ext.commands.errors import (
     CommandError,
     CommandInvokeError,
@@ -108,7 +110,7 @@ class Bot(_BaseBot):
     def _match_prefix(self, text: str) -> tuple[str, str] | None:
         for prefix in self.prefixes:
             if text.startswith(prefix):
-                return text[len(prefix):].strip(), prefix
+                return text[len(prefix) :].strip(), prefix
         return None
 
     def _without_prefix(self, text: str) -> tuple[str, str | None]:
@@ -129,7 +131,7 @@ class Bot(_BaseBot):
         if self.trigger is not None:
             match = self.trigger.match(content)
             if match:
-                rest = content[match.end():].strip()
+                rest = content[match.end() :].strip()
                 text, prefix = self._without_prefix(rest)
                 return text, False, prefix
         # A public line is addressed when the bot's name appears as a token. Check the
@@ -213,7 +215,7 @@ class Bot(_BaseBot):
             await command.invoke(ctx)
             if isinstance(cog, Cog):
                 await cog.cog_after_invoke(ctx)
-        except Exception as exc:  # noqa: BLE001 - routed to the error chain
+        except Exception as exc:
             await self._handle_error(ctx, command, exc)
 
     async def _handle_error(self, ctx: Context, command: Command, error: BaseException) -> None:
@@ -223,21 +225,21 @@ class Bot(_BaseBot):
                 if inspect.isawaitable(result):
                     await result
                 return
-            except Exception:  # noqa: BLE001 - fall through to the next handler
+            except Exception:
                 pass
         cog = command.cog
         if isinstance(cog, Cog):
             try:
                 await cog.cog_command_error(ctx, error)
                 return
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         if command._error is not None:
             result = command._error(ctx, error)
             if inspect.isawaitable(result):
                 await result
             return
-        if isinstance(error, (CommandError,)) or isinstance(error, CommandInvokeError):
+        if isinstance(error, (CommandError, CommandInvokeError)):
             import logging
 
             logging.getLogger("pyflayer.ext.commands").warning(
@@ -363,9 +365,9 @@ class Bot(_BaseBot):
         self._loading_extension = name
         try:
             module = importlib.import_module(module_name)
-            setup = getattr(module, "setup")
+            setup = module.setup
             await setup(self)
-        except Exception as exc:  # noqa: BLE001 - roll back and report
+        except Exception as exc:
             self._rollback(name)
             raise ExtensionFailed(name, exc) from exc
         else:

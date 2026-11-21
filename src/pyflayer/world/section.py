@@ -14,7 +14,7 @@ import numpy as np
 from pyflayer.errors import OutOfWorldBounds
 from pyflayer.world.palette import PalettedContainer
 
-__all__ = ["ChunkSection", "SECTION_SIZE", "section_index"]
+__all__ = ["SECTION_SIZE", "ChunkSection", "section_index"]
 
 SECTION_SIZE = 4096
 
@@ -43,9 +43,7 @@ class ChunkSection:
     ) -> ChunkSection:
         """Build from a 1.8 ``uint16`` state array."""
         if states.size != SECTION_SIZE:
-            raise OutOfWorldBounds(
-                "legacy section must have 4096 blocks", size=int(states.size)
-            )
+            raise OutOfWorldBounds("legacy section must have 4096 blocks", size=int(states.size))
         non_air = int(np.count_nonzero(states >> 4))
         return cls(PalettedContainer.from_legacy(states), non_air, block_light, sky_light)
 

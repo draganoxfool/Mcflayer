@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from pyflayer._internal.util import batched, ceil_log2, clamp, signed
 from pyflayer.data.features import Features
 from pyflayer.protocol.types.position import unpack_position

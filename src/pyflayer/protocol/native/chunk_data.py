@@ -26,7 +26,7 @@ from pyflayer.errors import MalformedPacket
 from pyflayer.protocol.buffer import PacketReader
 from pyflayer.protocol.types.nbt import read_nbt
 
-__all__ = ["LegacyChunkData", "SECTION_BLOCKS", "decode_legacy_chunk"]
+__all__ = ["SECTION_BLOCKS", "LegacyChunkData", "decode_legacy_chunk"]
 
 SECTION_BLOCKS = 4096
 SECTION_LIGHT_BYTES = 2048
@@ -71,7 +71,9 @@ def decode_legacy_chunk(
     block_light: dict[int, np.ndarray] = {}
     sky_lights: dict[int, np.ndarray] = {}
 
-    section_bytes = SECTION_BLOCKS * 2 + SECTION_LIGHT_BYTES + (SECTION_LIGHT_BYTES if sky_light else 0)
+    section_bytes = (
+        SECTION_BLOCKS * 2 + SECTION_LIGHT_BYTES + (SECTION_LIGHT_BYTES if sky_light else 0)
+    )
     for section_index in range(16):
         if not bit_map & (1 << section_index):
             continue
@@ -85,17 +87,13 @@ def decode_legacy_chunk(
         states = np.frombuffer(view[offset : offset + SECTION_BLOCKS * 2], dtype="<u2").copy()
         states.setflags(write=False)
         offset += SECTION_BLOCKS * 2
-        light = np.frombuffer(
-            view[offset : offset + SECTION_LIGHT_BYTES], dtype=np.uint8
-        ).copy()
+        light = np.frombuffer(view[offset : offset + SECTION_LIGHT_BYTES], dtype=np.uint8).copy()
         light.setflags(write=False)
         offset += SECTION_LIGHT_BYTES
         sections[section_index] = states
         block_light[section_index] = light
         if sky_light:
-            sky = np.frombuffer(
-                view[offset : offset + SECTION_LIGHT_BYTES], dtype=np.uint8
-            ).copy()
+            sky = np.frombuffer(view[offset : offset + SECTION_LIGHT_BYTES], dtype=np.uint8).copy()
             sky.setflags(write=False)
             offset += SECTION_LIGHT_BYTES
             sky_lights[section_index] = sky
@@ -144,12 +142,12 @@ def _parse_block_entities(
             xz = reader.read_u16()
             y = reader.read_u16()
             tag = read_nbt(reader, named=True)
-        except Exception:  # noqa: BLE001 - block entities are optional metadata
-            reader._offset = start  # noqa: SLF001 - restore the cursor for leftover reporting
+        except Exception:
+            reader._offset = start
             break
         value = tag.value if hasattr(tag, "value") else tag
         if not isinstance(value, dict):
-            reader._offset = start  # noqa: SLF001
+            reader._offset = start
             break
         record = dict(value)
         record["x"] = xz >> 4

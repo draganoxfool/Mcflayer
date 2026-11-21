@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import IntEnum, StrEnum
 
-__all__ = ["Dimension", "GameMode", "Face", "Hand", "Difficulty", "Pose", "ConnectionState"]
+__all__ = ["ConnectionState", "Difficulty", "Dimension", "Face", "GameMode", "Hand", "Pose"]
 
 
 class Dimension(StrEnum):

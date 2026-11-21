@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from pyflayer.errors import UnsupportedVersion
 
-__all__ = ["VersionInfo", "parse_version", "version_key", "protocol_for", "version_for_protocol"]
+__all__ = ["VersionInfo", "parse_version", "protocol_for", "version_for_protocol", "version_key"]
 
 _ALIASES = {
     "1.8.9": "1.8",

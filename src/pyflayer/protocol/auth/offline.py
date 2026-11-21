@@ -49,7 +49,9 @@ def validate_username(username: str) -> str:
 
 def offline_uuid(username: str) -> str:
     """Derive the offline-mode UUID for a username (UUIDv3 over ``OfflinePlayer:<name>``)."""
-    digest = bytearray(hashlib.md5(f"OfflinePlayer:{username}".encode(), usedforsecurity=False).digest())
+    digest = bytearray(
+        hashlib.md5(f"OfflinePlayer:{username}".encode(), usedforsecurity=False).digest()
+    )
     digest[6] = (digest[6] & 0x0F) | 0x30  # version 3
     digest[8] = (digest[8] & 0x3F) | 0x80  # RFC 4122 variant
     return str(uuid.UUID(bytes=bytes(digest)))
@@ -62,7 +64,7 @@ class OfflineAuth:
         username: Player name to send in Login Start.
     """
 
-    __slots__ = ("username", "_session")
+    __slots__ = ("_session", "username")
 
     def __init__(self, username: str) -> None:
         self.username = validate_username(username)

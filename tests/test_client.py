@@ -15,8 +15,8 @@ from pyflayer.protocol.registry import PacketRegistry
 from pyflayer.testing import FakeServer
 
 
-async def _read_until(client: ProtocolClient, name: str, *, timeout: float = 3.0) -> object:
-    async with asyncio.timeout(timeout):
+async def _read_until(client: ProtocolClient, name: str, *, timeout_seconds: float = 3.0) -> object:
+    async with asyncio.timeout(timeout_seconds):
         async for packet in client.packets():
             if packet.name == name:
                 return packet
@@ -84,9 +84,7 @@ async def test_packets_skips_unknown_placeholders() -> None:
             self.state.transition(ConnectionState.PLAY)
             self.pending = [
                 Packet(name="unknown_0x7f", fields={}, state="play", direction="toClient"),
-                Packet(
-                    name="unsupported_chunk", fields={}, state="play", direction="toClient"
-                ),
+                Packet(name="unsupported_chunk", fields={}, state="play", direction="toClient"),
                 Packet(name="chat", fields={}, state="play", direction="toClient"),
             ]
 

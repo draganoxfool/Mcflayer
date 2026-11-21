@@ -19,7 +19,7 @@ try:  # cryptography >= 45 moved CFB8 to the decrepit namespace
 except ImportError:  # pragma: no cover - older cryptography
     from cryptography.hazmat.primitives.ciphers.modes import CFB8  # type: ignore[assignment]
 
-__all__ = ["CipherPair", "AES_CFB8", "encrypt_rsa"]
+__all__ = ["AES_CFB8", "CipherPair", "encrypt_rsa"]
 
 
 def encrypt_rsa(public_key_der: bytes, data: bytes) -> bytes:
@@ -42,7 +42,7 @@ def encrypt_rsa(public_key_der: bytes, data: bytes) -> bytes:
 class CipherPair:
     """Encrypt/decrypt AES-128-CFB8 contexts for one connection."""
 
-    __slots__ = ("_encryptor", "_decryptor")
+    __slots__ = ("_decryptor", "_encryptor")
 
     def __init__(self, shared_secret: bytes) -> None:
         if len(shared_secret) != 16:

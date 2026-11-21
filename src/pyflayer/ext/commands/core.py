@@ -16,8 +16,10 @@ from typing import Any
 
 from pyflayer.ext.commands.converters import (
     _GreedyAnnotation,
-    convert as convert_argument,
     resolve_converter,
+)
+from pyflayer.ext.commands.converters import (
+    convert as convert_argument,
 )
 from pyflayer.ext.commands.errors import (
     CheckFailure,
@@ -57,7 +59,7 @@ def _parse_parameters(func: Callable[..., Any]) -> list[Parameter]:
     try:
         # ``include_extras`` keeps Annotated metadata available for converter resolution.
         hints = typing.get_type_hints(func, include_extras=True)
-    except Exception:  # noqa: BLE001 - fall back to raw annotations
+    except Exception:
         hints = {}
     index = 0
     if params and params[0].name in ("self", "cls"):
@@ -226,7 +228,11 @@ class Command:
             result = self._before(ctx)
             if inspect.isawaitable(result):
                 await result
-        key = ctx.sender_name if self.max_concurrency and self.max_concurrency[1].name == "player" else "global"
+        key = (
+            ctx.sender_name
+            if self.max_concurrency and self.max_concurrency[1].name == "player"
+            else "global"
+        )
         semaphore: asyncio.Semaphore | None = None
         if self.max_concurrency is not None:
             number, _per, wait = self.max_concurrency
@@ -248,7 +254,7 @@ class Command:
                 result = self.callback(*args, **ctx.kwargs)
                 if inspect.isawaitable(result):
                     await result
-            except Exception as exc:  # noqa: BLE001 - wrapped for the error chain
+            except Exception as exc:
                 raise CommandInvokeError(exc) from exc
         finally:
             if semaphore is not None:

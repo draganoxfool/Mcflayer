@@ -9,16 +9,16 @@ from __future__ import annotations
 import msgspec
 
 __all__ = [
-    "VersionJson",
+    "BiomeJson",
     "BlockJson",
     "BlockVariationJson",
+    "CollisionShapesJson",
+    "EffectJson",
+    "EntityJson",
+    "FoodJson",
     "ItemJson",
     "ItemVariationJson",
-    "EntityJson",
-    "BiomeJson",
-    "EffectJson",
-    "FoodJson",
-    "CollisionShapesJson",
+    "VersionJson",
 ]
 
 

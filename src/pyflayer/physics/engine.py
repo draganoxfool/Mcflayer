@@ -19,10 +19,10 @@ from pyflayer.models.aabb import AABB
 from pyflayer.models.vec3 import BlockPos, Vec3
 from pyflayer.physics.collision import STEP_HEIGHT, move_box
 from pyflayer.physics.controls import ControlState
-from pyflayer.physics.media import Medium, sample_medium
+from pyflayer.physics.media import sample_medium
 from pyflayer.physics.state import PlayerState
 
-__all__ = ["PhysicsEngine", "PLAYER_SPEED", "GRAVITY", "JUMP_VELOCITY"]
+__all__ = ["GRAVITY", "JUMP_VELOCITY", "PLAYER_SPEED", "PhysicsEngine"]
 
 PLAYER_SPEED = 0.1
 GRAVITY = 0.08
@@ -41,7 +41,7 @@ class _WorldReader(Protocol):
 class PhysicsEngine:
     """Player physics with version-independent 1.8 constants."""
 
-    __slots__ = ("step_height", "gravity")
+    __slots__ = ("gravity", "step_height")
 
     def __init__(self, *, step_height: float = STEP_HEIGHT, gravity: float = GRAVITY) -> None:
         self.step_height = step_height
@@ -192,4 +192,3 @@ def _sin_cos(yaw: float) -> tuple[float, float]:
 
 def _clamp(value: float, low: float, high: float) -> float:
     return low if value < low else high if value > high else value
-

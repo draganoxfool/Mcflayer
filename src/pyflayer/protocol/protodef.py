@@ -7,7 +7,8 @@ and cached.
 
 Supported protodef types: ``varint``, ``varlong``, all fixed-width integers, ``f32``/``f64``,
 ``bool``, ``UUID``, ``pstring``/``string``, ``buffer``, ``restBuffer``, ``array`` (by count type or
-count field), ``container``, ``switch``, ``option``, ``bitfield``, ``bitflags``, ``mapper``, ``void``,
+count field), ``container``, ``switch``, ``option``, ``bitfield``, ``bitflags``, ``mapper``,
+``void``,
 ``nbt``, ``optionalNbt``, ``anonymousNbt``, ``position`` and ``slot``.
 
 ``topBitSetTerminatedArray`` and entity-metadata types are deliberately left to
@@ -29,10 +30,10 @@ from pyflayer.protocol.types.slot import read_slot, write_slot
 
 __all__ = [
     "Codec",
-    "ProtocolCompiler",
-    "PacketCodec",
-    "Packet",
     "CompileReport",
+    "Packet",
+    "PacketCodec",
+    "ProtocolCompiler",
 ]
 
 Ctx = dict[str, Any]
@@ -117,7 +118,7 @@ class _BufferCodec:
 
 
 class _ArrayCodec:
-    __slots__ = ("element", "count", "count_field")
+    __slots__ = ("count", "count_field", "element")
 
     def __init__(self, element: Codec, count: Codec | None, count_field: str | None) -> None:
         self.element = element
@@ -188,7 +189,7 @@ class _ContainerCodec:
 
 
 class _SwitchCodec:
-    __slots__ = ("compare_to", "fields", "default")
+    __slots__ = ("compare_to", "default", "fields")
 
     def __init__(self, compare_to: str, fields: dict[str, Codec], default: Codec | None) -> None:
         self.compare_to = compare_to
@@ -317,7 +318,7 @@ class _BitflagsCodec:
 
 
 class _MapperCodec:
-    __slots__ = ("inner", "to_name", "to_id", "numeric")
+    __slots__ = ("inner", "numeric", "to_id", "to_name")
 
     def __init__(self, inner: Codec, mappings: dict[str, str]) -> None:
         self.inner = inner
@@ -448,7 +449,7 @@ class ProtocolCompiler:
                 self.packet_codec(state, direction, name)
             except UnsupportedType as exc:
                 report.unsupported[name] = str(exc)
-            except Exception as exc:  # noqa: BLE001 - report, do not abort the sweep
+            except Exception as exc:
                 report.unsupported[name] = f"{type(exc).__name__}: {exc}"
             else:
                 report.compiled.append(name)
@@ -495,9 +496,7 @@ class ProtocolCompiler:
                 return self._compile(spec, state, direction)
         return self._compile_native(name, None, state, direction)
 
-    def _compile_native(
-        self, name: str, params: Any, state: str, direction: str
-    ) -> Codec:
+    def _compile_native(self, name: str, params: Any, state: str, direction: str) -> Codec:
         p: dict[str, Any] = params if isinstance(params, dict) else {}
 
         def count_codec() -> Codec:
@@ -510,13 +509,21 @@ class ProtocolCompiler:
                 lambda writer, value, n=name: getattr(writer, f"write_{n}")(value),
             )
         if name == "varint":
-            return _FnCodec(lambda reader: reader.read_varint(), lambda writer, value: writer.write_varint(int(value)))
+            return _FnCodec(
+                lambda reader: reader.read_varint(),
+                lambda writer, value: writer.write_varint(int(value)),
+            )
         if name == "varlong":
-            return _FnCodec(lambda reader: reader.read_varlong(), lambda writer, value: writer.write_varlong(int(value)))
+            return _FnCodec(
+                lambda reader: reader.read_varlong(),
+                lambda writer, value: writer.write_varlong(int(value)),
+            )
         if name == "void":
             return _VoidCodec()
         if name == "UUID":
-            return _FnCodec(lambda reader: reader.read_uuid(), lambda writer, value: writer.write_uuid(value))
+            return _FnCodec(
+                lambda reader: reader.read_uuid(), lambda writer, value: writer.write_uuid(value)
+            )
         if name in {"pstring", "string"}:
             max_chars = int(p.get("maxLength", 32767))
             return _StringCodec(count_codec(), max_chars)
@@ -676,9 +683,11 @@ class Packet:
 class PacketCodec:
     """Binds a state/direction to its packet ids and lazily compiled codecs."""
 
-    __slots__ = ("state", "direction", "compiler", "ids", "names")
+    __slots__ = ("compiler", "direction", "ids", "names", "state")
 
-    def __init__(self, state: str, direction: str, compiler: ProtocolCompiler, ids: dict[int, str]) -> None:
+    def __init__(
+        self, state: str, direction: str, compiler: ProtocolCompiler, ids: dict[int, str]
+    ) -> None:
         self.state = state
         self.direction = direction
         self.compiler = compiler
@@ -686,7 +695,9 @@ class PacketCodec:
         self.names = {name: packet_id for packet_id, name in ids.items()}
 
     @classmethod
-    def build(cls, mc: McData, compiler: ProtocolCompiler, state: str, direction: str) -> PacketCodec:
+    def build(
+        cls, mc: McData, compiler: ProtocolCompiler, state: str, direction: str
+    ) -> PacketCodec:
         """Build from data, extracting the packet-id mapper."""
         del mc  # kept for a stable call signature
         return cls(state, direction, compiler, packet_mappings(compiler.protocol, state, direction))

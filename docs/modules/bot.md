@@ -13,17 +13,20 @@ from pyflayer.events import ChatEvent, SpawnEvent
 
 bot = pyflayer.Bot("Steve", host="play.pika-network.net")
 
+
 @bot.event
 async def on_chat(event: ChatEvent):
     print(event.message)
+
 
 @bot.event
 async def on_spawn(event: SpawnEvent):
     print("spawned at", event.position)
 
-join = await bot.connect()   # returns JoinEvent; sends client settings
+
+join = await bot.connect()  # returns JoinEvent; sends client settings
 await bot.chat("hello")
-await bot.run()              # read packets until disconnected
+await bot.run()  # read packets until disconnected
 ```
 
 `connect()` returns as soon as Join Game has been handled. The initial position, tab-list entries
@@ -122,13 +125,13 @@ import asyncio
 from pyflayer.events import SpawnEvent
 
 await bot.connect()
-task = asyncio.create_task(bot.run())   # run() owns packet reading
+task = asyncio.create_task(bot.run())  # run() owns packet reading
 await bot.wait_for(SpawnEvent)
 
-bot.look(yaw=270.0)                    # face +X
+bot.look(yaw=270.0)  # face +X
 bot.set_movement(forward=1.0, sprint=True)
-await asyncio.sleep(1.0)               # about 20 physics ticks
-bot.jump()                             # one tick only
+await asyncio.sleep(1.0)  # about 20 physics ticks
+bot.jump()  # one tick only
 bot.stop_movement()
 
 await bot.close()
@@ -177,6 +180,7 @@ movement packets in one tick.
 
 ```python
 from pyflayer.events import PhysicsTickEvent
+
 
 @bot.event
 async def on_physics_tick(event: PhysicsTickEvent) -> None:

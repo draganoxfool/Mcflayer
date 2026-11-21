@@ -16,7 +16,7 @@ from typing import Any
 
 from pyflayer.events.catalog import PhysicsTickEvent
 
-__all__ = ["Loop", "loop", "MISSING"]
+__all__ = ["MISSING", "Loop", "loop"]
 
 log = logging.getLogger("pyflayer.ext.tasks")
 
@@ -159,7 +159,7 @@ class Loop:
 class _BoundLoop:
     """A :class:`Loop` bound to one cog instance (or to nothing for a standalone loop)."""
 
-    __slots__ = ("_loop", "_instance", "_task", "_cancelled", "_failed", "_current_loop")
+    __slots__ = ("_cancelled", "_current_loop", "_failed", "_instance", "_loop", "_task")
 
     def __init__(self, loop: Loop, instance: Any) -> None:
         self._loop = loop
@@ -243,7 +243,9 @@ class _BoundLoop:
     # ------------------------------------------------------------------ run loop
     async def _run(self, *args: Any, **kwargs: Any) -> None:
         loop = self._loop
-        bound = loop.func.__get__(self._instance, type(self._instance)) if self._instance else loop.func
+        bound = (
+            loop.func.__get__(self._instance, type(self._instance)) if self._instance else loop.func
+        )
         try:
             if loop._before is not None:
                 result = loop._before(self)
@@ -259,7 +261,7 @@ class _BoundLoop:
                         await result
                 except asyncio.CancelledError:
                     raise
-                except Exception as exc:  # noqa: BLE001 - routed to the error handler
+                except Exception as exc:
                     if loop._error is not None:
                         handled = loop._error(self, exc)
                         if inspect.isawaitable(handled):

@@ -54,10 +54,9 @@ async def test_chat_roundtrip_and_event() -> None:
         received: list[ChatEvent] = []
         bot.events.subscribe(ChatEvent, received.append)
         task = asyncio.create_task(bot.run())
-        await bot.chat("hello world")
-        async with asyncio.timeout(2):
-            while not received:
-                await asyncio.sleep(0.01)
+        async with bot.events.expect(ChatEvent, timeout=2) as chat_event:
+            await bot.chat("hello world")
+            await chat_event
         assert received[0].message.content == "<Steve> hello world"
         assert server.chats == ["hello world"]
         await _stop(bot, task)
@@ -68,9 +67,7 @@ async def test_chat_preserves_explicit_command_slash() -> None:
         bot = await _start_bot(server)
         task = asyncio.create_task(bot.run())
         await bot.chat("/register password password")
-        async with asyncio.timeout(2):
-            while not server.chats:
-                await asyncio.sleep(0.01)
+        await _wait_for_packets(server, "chat")
         assert server.chats == ["/register password password"]
         await _stop(bot, task)
 
@@ -80,9 +77,7 @@ async def test_keep_alive_is_answered() -> None:
         bot = await _start_bot(server)
         task = asyncio.create_task(bot.run())
         server.send_play("keep_alive", {"keepAliveId": 1234})
-        async with asyncio.timeout(2):
-            while 1234 not in server.keep_alives:
-                await asyncio.sleep(0.01)
+        await _wait_for_packets(server, "keep_alive")
         await _stop(bot, task)
 
 
@@ -93,9 +88,7 @@ async def test_death_triggers_respawn() -> None:
         deaths: list[DeathEvent] = []
         bot.events.subscribe(DeathEvent, deaths.append)
         waiter = asyncio.create_task(bot.wait_for(RespawnEvent, timeout=2))
-        server.send_play(
-            "update_health", {"health": 0.0, "food": 20, "foodSaturation": 5.0}
-        )
+        server.send_play("update_health", {"health": 0.0, "food": 20, "foodSaturation": 5.0})
         await waiter
         assert deaths and deaths[0].health == 0
         assert not bot.dead
@@ -103,9 +96,7 @@ async def test_death_triggers_respawn() -> None:
 
 
 async def test_kick_raises_kicked_error() -> None:
-    async with FakeServer(
-        kick_after_join=True, kick_reason='{"text":"go away"}'
-    ) as server:
+    async with FakeServer(kick_after_join=True, kick_reason='{"text":"go away"}') as server:
         bot = await _start_bot(server)
         kicks: list[KickEvent] = []
         bot.events.subscribe(KickEvent, kicks.append)
@@ -124,6 +115,7 @@ async def test_bot_event_decorator() -> None:
         seen.append(event)
 
     with pytest.raises(ValueError):
+
         @bot.event
         async def on_nope(event: object) -> None:
             pass
@@ -215,9 +207,9 @@ def test_split_message() -> None:
 
 
 async def _wait_for_packets(
-    server: FakeServer, name: str, count: int = 1, timeout: float = 2.0
+    server: FakeServer, name: str, count: int = 1, timeout_seconds: float = 2.0
 ) -> list[object]:
-    async with asyncio.timeout(timeout):
+    async with asyncio.timeout(timeout_seconds):
         while True:
             packets = [packet for packet in server.received if packet.name == name]
             if len(packets) >= count:
@@ -236,10 +228,13 @@ async def test_hotbar_selection_sends_slot_id_and_accepts_server_update() -> Non
 
         # The server-to-client packet uses a byte field named ``slot``; the outgoing
         # client-to-server packet names the short field ``slotId``.
-        server.send_play("held_item_slot", {"slot": 7})
-        async with asyncio.timeout(2):
-            while bot.inventory.held_slot != 7:
-                await asyncio.sleep(0.01)
+        async with bot.events.expect(
+            InventoryChangedEvent,
+            check=lambda event: event.slot == 43,
+            timeout=2,
+        ) as inventory_event:
+            server.send_play("held_item_slot", {"slot": 7})
+            await inventory_event
         await _stop(bot, task)
 
         with pytest.raises(ValueError):
@@ -277,31 +272,35 @@ async def test_window_click_packets_carry_slot_mode_and_action() -> None:
 
 async def test_cursor_set_slot_and_close_window() -> None:
     bot = Bot("Steve", host="localhost", use_srv=False)
-        
-    task = asyncio.create_task(bot._on_set_slot(Packet(
-        "set_slot",
-        {"windowId": 0, "slot": -1, "item": ItemStack(item_id=1, count=3)},
-        "play",
-        "toClient",
-    )))
+
+    task = asyncio.create_task(
+        bot._on_set_slot(
+            Packet(
+                "set_slot",
+                {"windowId": 0, "slot": -1, "item": ItemStack(item_id=1, count=3)},
+                "play",
+                "toClient",
+            )
+        )
+    )
     await task
     assert bot.inventory.cursor.item_id == 1
 
     events: list[InventoryChangedEvent] = []
     bot.events.subscribe(InventoryChangedEvent, events.append)
-    await bot._on_set_slot(Packet(
-        "set_slot",
-        {"windowId": 0, "slot": -1, "item": ItemStack(item_id=4, count=2)},
-        "play",
-        "toClient",
-    ))
+    await bot._on_set_slot(
+        Packet(
+            "set_slot",
+            {"windowId": 0, "slot": -1, "item": ItemStack(item_id=4, count=2)},
+            "play",
+            "toClient",
+        )
+    )
     await asyncio.sleep(0.01)
     assert events[-1].slot == -2
 
     bot.inventory.open_window(2, "Chest", 27)
-    await bot._on_close_window(Packet(
-        "close_window", {"windowId": 2}, "play", "toClient"
-    ))
+    await bot._on_close_window(Packet("close_window", {"windowId": 2}, "play", "toClient"))
     assert bot.inventory.window(2) is None
     assert bot.inventory.cursor.empty
     await bot.events.aclose()
@@ -325,10 +324,7 @@ async def test_use_place_and_dig_packets() -> None:
 
         digs = await _wait_for_packets(server, "block_dig", count=3)
         assert [packet.fields["status"] for packet in digs] == [0, 2, 1]
-        assert all(
-            packet.fields["location"] == {"x": 3, "y": 64, "z": 4}
-            for packet in digs
-        )
+        assert all(packet.fields["location"] == {"x": 3, "y": 64, "z": 4} for packet in digs)
         await _stop(bot, task)
 
 

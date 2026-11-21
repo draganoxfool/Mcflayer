@@ -1,7 +1,8 @@
 """Chunk columns.
 
 A column owns up to 16 immutable sections plus biomes and block entities. Block writes replace the
-section and bump ``version``; :meth:`copy` produces a cheap snapshot that later writes cannot mutate.
+section and bump ``version``; :meth:`copy` produces a cheap snapshot that later writes
+cannot mutate.
 
 Examples:
     >>> column = ChunkColumn(ChunkPos(0, 0))
@@ -13,8 +14,6 @@ Examples:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
 import numpy as np
 
 from pyflayer.errors import OutOfWorldBounds
@@ -22,7 +21,7 @@ from pyflayer.models.vec3 import BlockPos, ChunkPos
 from pyflayer.protocol.native.chunk_data import LegacyChunkData
 from pyflayer.world.section import ChunkSection
 
-__all__ = ["ChunkColumn", "MIN_SECTIONS", "MAX_SECTIONS"]
+__all__ = ["MAX_SECTIONS", "MIN_SECTIONS", "ChunkColumn"]
 
 MIN_SECTIONS = 16
 MAX_SECTIONS = 16
@@ -31,7 +30,7 @@ MAX_SECTIONS = 16
 class ChunkColumn:
     """One 16x256x16 chunk column (1.8 layout)."""
 
-    __slots__ = ("pos", "min_y", "height", "sections", "biomes", "block_entities", "version")
+    __slots__ = ("biomes", "block_entities", "height", "min_y", "pos", "sections", "version")
 
     def __init__(
         self,
@@ -142,9 +141,9 @@ class ChunkColumn:
         block_entities: dict[BlockPos, dict[str, object]] = {}
         for record in data.block_entities:
             local = (int(record.get("x", 0)), int(record.get("y", 0)), int(record.get("z", 0)))
-            block_entities[
-                BlockPos(pos.x * 16 + local[0], local[1], pos.z * 16 + local[2])
-            ] = record
+            block_entities[BlockPos(pos.x * 16 + local[0], local[1], pos.z * 16 + local[2])] = (
+                record
+            )
         return cls(
             pos,
             sections=sections,
@@ -194,18 +193,11 @@ class ChunkColumn:
         return self.block_entities.get(pos)
 
     def __repr__(self) -> str:
-        return (
-            f"ChunkColumn(pos={self.pos}, sections={self.section_count}, "
-            f"non_air={self.non_air})"
-        )
+        return f"ChunkColumn(pos={self.pos}, sections={self.section_count}, non_air={self.non_air})"
 
 
 def _check_local(local_x: int, world_y: int, local_z: int, min_y: int, height: int) -> None:
     if not (0 <= local_x < 16 and 0 <= local_z < 16):
-        raise OutOfWorldBounds(
-            "local coordinate outside the chunk column", x=local_x, z=local_z
-        )
+        raise OutOfWorldBounds("local coordinate outside the chunk column", x=local_x, z=local_z)
     if not (min_y <= world_y < min_y + height):
-        raise OutOfWorldBounds(
-            "Y outside the world height", y=world_y, min_y=min_y, height=height
-        )
+        raise OutOfWorldBounds("Y outside the world height", y=world_y, min_y=min_y, height=height)

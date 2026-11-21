@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pyflayer.models.aabb import AABB
 from pyflayer.models.vec3 import Vec3
 
 __all__ = [
-    "PlayerState",
-    "PLAYER_WIDTH",
-    "PLAYER_HEIGHT",
     "PLAYER_EYE_HEIGHT",
+    "PLAYER_HEIGHT",
+    "PLAYER_WIDTH",
+    "PlayerState",
 ]
 
 PLAYER_WIDTH = 0.6
@@ -28,7 +28,7 @@ class PlayerState:
     """
 
     position: Vec3
-    velocity: Vec3 = Vec3(0.0, 0.0, 0.0)
+    velocity: Vec3 = field(default_factory=lambda: Vec3(0.0, 0.0, 0.0))
     yaw: float = 0.0
     pitch: float = 0.0
     on_ground: bool = False

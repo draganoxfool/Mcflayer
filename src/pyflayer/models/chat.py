@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 
 from pyflayer.models.text import ChatComponent
 
-__all__ = ["ChatMessage", "CHAT_POSITIONS"]
+__all__ = ["CHAT_POSITIONS", "ChatMessage"]
 
 #: 1.8 chat packet positions.
 CHAT_POSITIONS = {0: "chat", 1: "system", 2: "action_bar"}

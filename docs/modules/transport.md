@@ -7,8 +7,8 @@ Framing, crypto, the TCP connection and server list ping.
 ```python
 from pyflayer.protocol import FrameCodec
 
-codec = FrameCodec()                       # compression off
-frame = codec.encode(payload)              # [length VarInt][payload]
+codec = FrameCodec()  # compression off
+frame = codec.encode(payload)  # [length VarInt][payload]
 assert codec.decode(frame[1:]) == payload
 
 codec = FrameCodec(compression_threshold=256)

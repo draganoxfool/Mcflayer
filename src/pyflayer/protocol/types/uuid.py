@@ -6,7 +6,7 @@ import uuid as _uuid
 
 from pyflayer.errors import MalformedPacket
 
-__all__ = ["read_uuid", "write_uuid", "uuid_from_int", "uuid_to_int"]
+__all__ = ["read_uuid", "uuid_from_int", "uuid_to_int", "write_uuid"]
 
 
 def read_uuid(reader: object) -> _uuid.UUID:

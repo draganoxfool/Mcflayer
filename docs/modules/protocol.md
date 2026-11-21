@@ -8,8 +8,8 @@ These modules turn bytes into values and values into bytes. They know nothing ab
 ```python
 from pyflayer.protocol import encode_varint, decode_varint
 
-encode_varint(-1)          # b'\xff\xff\xff\xff\x0f'
-decode_varint(b'\xac\x02') # (300, 2)
+encode_varint(-1)  # b'\xff\xff\xff\xff\x0f'
+decode_varint(b"\xac\x02")  # (300, 2)
 ```
 
 - Signed 32-bit VarInt (max 5 bytes) and signed 64-bit VarLong (max 10 bytes).

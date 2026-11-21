@@ -215,9 +215,7 @@ def _load(data_dir: Path, key: str) -> McData:
 
     return McData(
         version=info,
-        features=replace(
-            features, version=normalize(key), protocol=version_json.version
-        ),
+        features=replace(features, version=normalize(key), protocol=version_json.version),
         blocks=BlockRegistry.from_json(blocks_json),
         items=ItemRegistry.from_json(items_json),
         entities=EntityRegistry.from_json(entities_json),

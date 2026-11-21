@@ -48,7 +48,7 @@ from pyflayer.errors import MalformedPacket, ProtocolError
 try:
     reader.read_varint()
 except ProtocolError as exc:
-    print(exc.fields)       # {'offset': 3}
+    print(exc.fields)  # {'offset': 3}
 ```
 
 !!! note "Known limitation"

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import socket
+from contextlib import suppress
 from dataclasses import dataclass
 
 from pyflayer._internal.clock import Clock, MonotonicClock
@@ -31,7 +32,12 @@ class ResolvedAddress:
     srv: bool = False
 
 
-async def resolve_address(host: str, port: int = DEFAULT_PORT, *, timeout: float = 3.0) -> ResolvedAddress:
+async def resolve_address(
+    host: str,
+    port: int = DEFAULT_PORT,
+    *,
+    timeout: float = 3.0,  # noqa: ASYNC109 - public DNS timeout option
+) -> ResolvedAddress:
     """Resolve ``_minecraft._tcp.<host>`` to ``(host, port)``, falling back to ``host:port``."""
     if port != DEFAULT_PORT:
         return ResolvedAddress(host, port)
@@ -50,7 +56,7 @@ async def resolve_address(host: str, port: int = DEFAULT_PORT, *, timeout: float
             if records:
                 target = str(records[0].target).rstrip(".")
                 return ResolvedAddress(target or host, int(records[0].port), True)
-        except Exception:  # noqa: BLE001 - DNS failures must not prevent a direct connection
+        except Exception:
             pass
         return ResolvedAddress(host, port, False)
 
@@ -65,12 +71,12 @@ class Connection:
     """One Minecraft TCP connection."""
 
     __slots__ = (
-        "_reader",
-        "_writer",
-        "_codec",
         "_cipher",
-        "_write_lock",
+        "_codec",
         "_read_timeout",
+        "_reader",
+        "_write_lock",
+        "_writer",
         "clock",
         "host",
         "port",
@@ -112,17 +118,17 @@ class Connection:
         resolved = await resolve_address(host, port) if use_srv else ResolvedAddress(host, port)
         try:
             async with asyncio.timeout(connect_timeout):
-                reader, writer = await asyncio.open_connection(resolved.host, resolved.port, limit=MAX_FRAME + 32)
+                reader, writer = await asyncio.open_connection(
+                    resolved.host, resolved.port, limit=MAX_FRAME + 32
+                )
         except (OSError, TimeoutError) as exc:
             raise ConnectionClosed(
                 f"failed to connect to {resolved.host}:{resolved.port}", reason=str(exc)
             ) from exc
         sock = writer.get_extra_info("socket")
         if isinstance(sock, socket.socket):
-            try:
+            with suppress(OSError):
                 sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            except OSError:
-                pass
         conn = cls(reader, writer, host=resolved.host, port=resolved.port, clock=clock)
         conn._read_timeout = read_timeout
         return conn
@@ -213,10 +219,8 @@ class Connection:
         """Close the connection cleanly (idempotent)."""
         if not self._writer.is_closing():
             self._writer.close()
-        try:
+        with suppress(ConnectionResetError, OSError):
             await self._writer.wait_closed()
-        except (ConnectionResetError, OSError):
-            pass
 
     async def __aenter__(self) -> Connection:
         return self

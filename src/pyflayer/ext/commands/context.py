@@ -32,17 +32,17 @@ class Context:
     """
 
     __slots__ = (
-        "bot",
-        "message",
-        "author",
-        "sender_name",
-        "invoked_with",
-        "command",
         "args",
-        "kwargs",
-        "view",
+        "author",
+        "bot",
+        "command",
+        "invoked_with",
         "is_whisper",
+        "kwargs",
+        "message",
         "prefix",
+        "sender_name",
+        "view",
     )
 
     def __init__(

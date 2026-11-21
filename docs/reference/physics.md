@@ -36,11 +36,13 @@ engine = PhysicsEngine()
 state = engine.step(state, ControlState(forward=1.0, sprint=True, yaw=0.0), world)
 print(state.position, state.velocity, state.on_ground)
 
+
 # Drive at 20 TPS
 async def tick(tick_number: int) -> None:
     global state
     state = engine.step(state, ControlState(forward=1.0, yaw=0.0), world)
     print(f"Tick {tick_number}: {state.position}")
+
 
 asyncio.run(TickDriver(MonotonicClock()).run(tick))
 ```

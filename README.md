@@ -28,8 +28,7 @@ You know **discord.py**: the cleanest command framework around.
 ```python
 # the vibe (see examples/ for runnable demos)
 @bot.command()
-async def follow(ctx, player: Player):
-    ...
+async def follow(ctx, player: Player): ...
 ```
 
 ---

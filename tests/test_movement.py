@@ -9,6 +9,7 @@ import pytest
 from pyflayer._internal.clock import FakeClock
 from pyflayer.bot import Bot
 from pyflayer.bot.movement import MovementTracker
+from pyflayer.events import PhysicsTickEvent
 from pyflayer.models import ChunkPos, Vec3
 from pyflayer.testing import FakeServer
 from pyflayer.world import ChunkColumn
@@ -101,9 +102,7 @@ def test_confirm_18_echoes_position_and_resets_baseline() -> None:
 def test_confirm_19_uses_teleport_id() -> None:
     tracker = MovementTracker()
 
-    packet = tracker.confirm(
-        Vec3(12.5, 70.0, -4.5), 30.0, 5.0, False, teleport_id=7
-    )
+    packet = tracker.confirm(Vec3(12.5, 70.0, -4.5), 30.0, 5.0, False, teleport_id=7)
 
     assert packet.name == "teleport_confirm"
     assert packet.fields == {"teleportId": 7}
@@ -182,23 +181,27 @@ async def test_server_position_sets_control_look_direction() -> None:
     async with FakeServer() as server:
         bot = Bot("Steve", host="127.0.0.1", port=server.port, use_srv=False)
         await bot.connect()
+        bot.world.apply_chunk(_floor_world_column())
         task = asyncio.create_task(bot.run())
         try:
             # FakeServer already sent a position at yaw 0; send an authoritative correction.
-            server.send_play(
-                "position",
-                {
-                    "x": 0.5,
-                    "y": 64.0,
-                    "z": 0.5,
-                    "yaw": 90.0,
-                    "pitch": -12.0,
-                    "flags": 0,
-                },
-            )
-            async with asyncio.timeout(2):
-                while bot.controls.yaw != 90.0:
-                    await asyncio.sleep(0.01)
+            async with bot.events.expect(
+                PhysicsTickEvent,
+                check=lambda _event: bot.controls.yaw == 90.0,
+                timeout=2,
+            ) as pose_tick:
+                server.send_play(
+                    "position",
+                    {
+                        "x": 0.5,
+                        "y": 64.0,
+                        "z": 0.5,
+                        "yaw": 90.0,
+                        "pitch": -12.0,
+                        "flags": 0,
+                    },
+                )
+                await pose_tick
             assert bot.yaw == 90.0
             assert bot.pitch == -12.0
             assert bot.controls.pitch == -12.0

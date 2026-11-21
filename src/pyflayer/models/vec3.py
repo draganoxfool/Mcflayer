@@ -15,7 +15,7 @@ import math
 from dataclasses import dataclass
 from typing import Self
 
-__all__ = ["Vec3", "BlockPos", "ChunkPos", "SectionPos"]
+__all__ = ["BlockPos", "ChunkPos", "SectionPos", "Vec3"]
 
 
 @dataclass(frozen=True, slots=True)

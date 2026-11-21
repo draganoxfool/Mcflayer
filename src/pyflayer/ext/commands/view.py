@@ -57,11 +57,11 @@ class StringView:
         start = self.index
         while self.index < len(self.buffer) and not self.buffer[self.index].isspace():
             self.index += 1
-        return self.buffer[start:self.index]
+        return self.buffer[start : self.index]
 
     def read_rest(self) -> str:
         """Return the remainder of the buffer, consuming it."""
-        rest = self.buffer[self.index:]
+        rest = self.buffer[self.index :]
         self.index = len(self.buffer)
         return rest
 

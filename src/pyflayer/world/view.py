@@ -15,15 +15,17 @@ from pyflayer.models.vec3 import BlockPos, ChunkPos
 from pyflayer.world.block import BlockState
 from pyflayer.world.chunk import ChunkColumn
 
-__all__ = ["WorldSnapshot", "Bounds"]
+__all__ = ["Bounds", "WorldSnapshot"]
 
 
 class Bounds:
     """Optional inclusive block bounds used when snapshotting."""
 
-    __slots__ = ("min_x", "min_y", "min_z", "max_x", "max_y", "max_z")
+    __slots__ = ("max_x", "max_y", "max_z", "min_x", "min_y", "min_z")
 
-    def __init__(self, min_x: int, min_y: int, min_z: int, max_x: int, max_y: int, max_z: int) -> None:
+    def __init__(
+        self, min_x: int, min_y: int, min_z: int, max_x: int, max_y: int, max_z: int
+    ) -> None:
         self.min_x = min_x
         self.min_y = min_y
         self.min_z = min_z
@@ -44,7 +46,7 @@ class Bounds:
 class WorldSnapshot:
     """Immutable ``{ChunkPos: ChunkColumn}`` view implementing the reader contract."""
 
-    __slots__ = ("mc", "chunks", "min_y", "height", "_blocks")
+    __slots__ = ("_blocks", "chunks", "height", "mc", "min_y")
 
     def __init__(
         self,

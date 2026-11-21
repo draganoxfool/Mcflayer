@@ -6,26 +6,27 @@ Legacy (pre-1.13) block state ids are ``(block_id << 4) | metadata`` helpers, no
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Generic, Iterable, TypeVar
+from typing import Generic, TypeVar
 
 from pyflayer.data.schema import BiomeJson, BlockJson, EffectJson, EntityJson, FoodJson, ItemJson
 from pyflayer.errors import MissingRegistryEntry
 
 __all__ = [
-    "Registry",
-    "Block",
-    "Item",
-    "Entity",
     "Biome",
-    "Effect",
-    "Food",
-    "BlockRegistry",
-    "ItemRegistry",
-    "EntityRegistry",
     "BiomeRegistry",
+    "Block",
+    "BlockRegistry",
+    "Effect",
     "EffectRegistry",
+    "Entity",
+    "EntityRegistry",
+    "Food",
     "FoodRegistry",
+    "Item",
+    "ItemRegistry",
+    "Registry",
 ]
 
 T = TypeVar("T")
@@ -39,7 +40,7 @@ def _normalize_name(name: str) -> str:
 class Registry(Generic[T]):
     """Frozen name/id registry built from entries exposing ``id`` and ``name``."""
 
-    __slots__ = ("_entries", "_by_name", "_by_id")
+    __slots__ = ("_by_id", "_by_name", "_entries")
 
     def __init__(self, entries: Iterable[T]) -> None:
         self._entries: tuple[T, ...] = tuple(entries)

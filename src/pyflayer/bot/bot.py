@@ -68,9 +68,9 @@ from pyflayer.protocol.auth.base import AuthProvider
 from pyflayer.protocol.client import ProtocolClient
 from pyflayer.protocol.native.chunk_data import decode_legacy_chunk
 from pyflayer.protocol.protodef import Packet
-from pyflayer.world import ChunkColumn, Entity, EntityTracker, World
+from pyflayer.world import ChunkColumn, EntityTracker, World
 
-__all__ = ["Bot", "PlayerInfo", "BotState"]
+__all__ = ["Bot", "BotState", "PlayerInfo"]
 
 log = logging.getLogger("pyflayer.bot")
 
@@ -122,56 +122,56 @@ class Bot:
     """
 
     __slots__ = (
-        "username",
-        "host",
-        "port",
-        "version",
-        "auth",
-        "clock",
-        "use_srv",
-        "auto_respawn",
-        "reconnect",
-        "max_backoff",
-        "join_timeout",
-        "events",
-        "client",
-        "uuid",
-        "entity_id",
-        "position",
-        "spawn_position",
-        "yaw",
-        "pitch",
-        "health",
-        "food",
-        "saturation",
-        "game_mode",
-        "dimension",
-        "dead",
-        "joined",
-        "spawned",
-        "players",
-        "world",
-        "entities",
-        "inventory",
-        "experience",
+        "_backoff",
+        "_chat",
+        "_closed",
+        "_join_event",
+        "_jump_next",
+        "_last_sneaking",
+        "_last_sprinting",
+        "_physics_task",
+        "_ready",
+        "_teleport_id",
+        "_teleport_pending",
         "attributes",
+        "auth",
+        "auto_respawn",
+        "client",
+        "clock",
+        "controls",
+        "dead",
+        "dimension",
+        "entities",
+        "entity_id",
+        "events",
+        "experience",
+        "food",
+        "game_mode",
+        "health",
+        "host",
+        "inventory",
+        "join_timeout",
+        "joined",
         "kick_reason",
+        "max_backoff",
+        "movement",
         "physics",
         "physics_state",
-        "controls",
-        "movement",
+        "pitch",
+        "players",
+        "port",
+        "position",
+        "reconnect",
+        "saturation",
+        "spawn_position",
+        "spawned",
         "tick_driver",
-        "_physics_task",
-        "_jump_next",
-        "_last_sprinting",
-        "_last_sneaking",
-        "_teleport_pending",
-        "_teleport_id",
-        "_join_event",
-        "_chat",
-        "_ready",
-        "_closed",
-        "_backoff",
+        "use_srv",
+        "username",
+        "uuid",
+        "version",
+        "world",
+        "yaw",
     )
 
     def __init__(
@@ -377,7 +377,9 @@ class Bot:
             except ProtocolError as exc:
                 error = exc
                 log.warning("protocol error: %s", exc)
-            self.events.dispatch(DisconnectEvent(reason=str(error) if error else "closed", error=error))
+            self.events.dispatch(
+                DisconnectEvent(reason=str(error) if error else "closed", error=error)
+            )
             await self._close_client()
             if isinstance(error, KickedError):
                 raise error
@@ -463,21 +465,13 @@ class Bot:
             item=item,
         )
 
-    async def shift_click_slot(
-        self, slot: int, *, button: int = 0, window_id: int = 0
-    ) -> int:
+    async def shift_click_slot(self, slot: int, *, button: int = 0, window_id: int = 0) -> int:
         """Shift-click a slot (quick-move between container and inventory)."""
-        return await _windows.shift_click_slot(
-            self, slot, button=button, window_id=window_id
-        )
+        return await _windows.shift_click_slot(self, slot, button=button, window_id=window_id)
 
-    async def drop_slot(
-        self, slot: int, *, all: bool = False, window_id: int = 0
-    ) -> int:
+    async def drop_slot(self, slot: int, *, all: bool = False, window_id: int = 0) -> int:
         """Drop one item or the whole stack from a slot."""
-        return await _windows.drop_slot(
-            self, slot, all=all, window_id=window_id
-        )
+        return await _windows.drop_slot(self, slot, all=all, window_id=window_id)
 
     async def close_window(self, window_id: int = 0) -> None:
         """Close a window server-side and drop its local state."""
@@ -623,7 +617,7 @@ class Bot:
             raise
         except ConnectionClosed:
             log.debug("physics loop stopped: connection closed")
-        except Exception:  # noqa: BLE001 - one bad tick must not kill the reader silently
+        except Exception:
             log.exception("physics loop failed")
 
     async def _physics_tick(self, tick: int) -> None:
@@ -650,9 +644,7 @@ class Bot:
         self.pitch = state.pitch
 
         await self._sync_action_state(state)
-        packet = self.movement.observe(
-            state.position, state.yaw, state.pitch, state.on_ground
-        )
+        packet = self.movement.observe(state.position, state.yaw, state.pitch, state.on_ground)
         if packet is not None:
             await self._send_movement(packet)
         self.events.dispatch(
@@ -686,13 +678,9 @@ class Bot:
 
     async def _send_position_confirmation(self, state: PlayerState) -> None:
         if self.teleport_confirm_supported:
-            packet = MovementPacket(
-                "teleport_confirm", {"teleportId": self._teleport_id or 0}
-            )
+            packet = MovementPacket("teleport_confirm", {"teleportId": self._teleport_id or 0})
         else:
-            packet = self.movement.confirm(
-                state.position, state.yaw, state.pitch, state.on_ground
-            )
+            packet = self.movement.confirm(state.position, state.yaw, state.pitch, state.on_ground)
         await self._send_movement(packet)
 
     async def _send_movement(self, packet: MovementPacket) -> None:
@@ -715,13 +703,23 @@ class Bot:
         self.events.subscribe(event_type, coro)
         return coro
 
-    async def wait_for(self, event: type, *, check: Callable[[Any], bool] | None = None,
-                       timeout: float | None = None) -> Any:
+    async def wait_for(
+        self,
+        event: type,
+        *,
+        check: Callable[[Any], bool] | None = None,
+        timeout: float | None = None,  # noqa: ASYNC109 - public event-wait API
+    ) -> Any:
         """Delegate to :meth:`EventBus.wait_for`."""
         return await self.events.wait_for(event, check=check, timeout=timeout)
 
-    def expect(self, event: type, *, check: Callable[[Any], bool] | None = None,
-               timeout: float | None = None) -> Expectation:
+    def expect(
+        self,
+        event: type,
+        *,
+        check: Callable[[Any], bool] | None = None,
+        timeout: float | None = None,
+    ) -> Expectation:
         """Delegate to :meth:`EventBus.expect`."""
         return self.events.expect(event, check=check, timeout=timeout)
 
@@ -803,9 +801,7 @@ class Bot:
         # the bot keeps facing its default direction (0, 0) and walks the wrong way after spawning
         # on a server that starts players at a non-zero yaw.
         self.controls = replace(self.controls, yaw=yaw, pitch=pitch)
-        self.physics_state = PlayerState(
-            self.position, yaw=yaw, pitch=pitch, on_ground=on_ground
-        )
+        self.physics_state = PlayerState(self.position, yaw=yaw, pitch=pitch, on_ground=on_ground)
 
         # 1.9+ confirms with teleport_confirm; 1.8 has no teleport id and confirms by echoing the
         # position. Both are version-dispatched through Features rather than a protocol check here.
@@ -910,11 +906,12 @@ class Bot:
                 info.ping = _optional_int(entry.get("ping"))
             elif action == "update_display_name":
                 info.display_name = _display_text(entry.get("displayName"))
-            if action in ("add_player", "update_display_name"):
+            if action in ("add_player", "update_display_name") and (
+                "displayName" not in entry or info.display_name is None
+            ):
                 # ``displayName`` is optional on the wire (1.8 sends it only on some servers), so
                 # fall back to the tab-list name instead of leaving a misleading ``None``.
-                if "displayName" not in entry or info.display_name is None:
-                    info.display_name = info.name
+                info.display_name = info.name
             self.players[uuid] = info
             if info.name:
                 self.entities.set_name(uuid, info.name)
@@ -963,11 +960,7 @@ class Bot:
             if not isinstance(entry, dict):
                 continue
             bit_map = int(entry.get("bitMap", 0))
-            size = (
-                bit_map.bit_count()
-                * (4096 * 2 + 2048 + (2048 if sky_light else 0))
-                + 256
-            )
+            size = bit_map.bit_count() * (4096 * 2 + 2048 + (2048 if sky_light else 0)) + 256
             data = decode_legacy_chunk(
                 raw[offset : offset + size],
                 bit_map,
@@ -982,15 +975,15 @@ class Bot:
             self._emit_chunk(column)
 
     def _emit_chunk(self, column: ChunkColumn) -> None:
-        self.events.dispatch(
-            ChunkLoadEvent(column.pos, column.section_count, column.non_air)
-        )
+        self.events.dispatch(ChunkLoadEvent(column.pos, column.section_count, column.non_air))
 
     async def _on_block_change(self, packet: Packet) -> None:
         location = packet.fields.get("location")
         if not isinstance(location, dict):
             return
-        pos = BlockPos(int(location.get("x", 0)), int(location.get("y", 0)), int(location.get("z", 0)))
+        pos = BlockPos(
+            int(location.get("x", 0)), int(location.get("y", 0)), int(location.get("z", 0))
+        )
         state_id = int(packet.fields.get("type", 0))
         old = self.world.block_state_id_or(pos, 0)
         if self.world.set_block_state(pos, state_id):
@@ -1129,9 +1122,7 @@ class Bot:
         metadata = _metadata(packet.fields.get("metadata"))
         entity = self.entities.set_metadata(int(packet.fields.get("entityId", 0)), metadata)
         if entity is not None:
-            self.events.dispatch(
-                EntityMetadataEvent(entity.entity_id, dict(entity.metadata))
-            )
+            self.events.dispatch(EntityMetadataEvent(entity.entity_id, dict(entity.metadata)))
 
     async def _on_entity_equipment(self, packet: Packet) -> None:
         item = packet.fields.get("item")
@@ -1192,7 +1183,9 @@ class Bot:
         slot = int(packet.fields.get("slotId", packet.fields.get("slot", 0)))
         self.inventory.set_held_slot(slot)
         self.events.dispatch(
-            InventoryChangedEvent(0, HOTBAR_START + self.inventory.held_slot, self.inventory.held_item)
+            InventoryChangedEvent(
+                0, HOTBAR_START + self.inventory.held_slot, self.inventory.held_item
+            )
         )
 
     async def _on_open_window(self, packet: Packet) -> None:
@@ -1230,10 +1223,7 @@ class Bot:
                 self.attributes[str(prop["key"])] = float(prop.get("value", 0.0))
 
     def __repr__(self) -> str:
-        return (
-            f"Bot(username={self.username!r}, host={self.host!r}, "
-            f"connected={self.connected})"
-        )
+        return f"Bot(username={self.username!r}, host={self.host!r}, connected={self.connected})"
 
 
 def _optional_int(value: object) -> int | None:

@@ -19,7 +19,7 @@ from pyflayer.data.loader import McData
 from pyflayer.models.items import ItemStack
 from pyflayer.models.vec3 import Vec3
 
-__all__ = ["Entity", "EntityTracker", "POSITION_SCALE", "ROTATION_SCALE"]
+__all__ = ["POSITION_SCALE", "ROTATION_SCALE", "Entity", "EntityTracker"]
 
 POSITION_SCALE = 1.0 / 32.0
 ROTATION_SCALE = 360.0 / 256.0
@@ -57,16 +57,13 @@ class Entity:
         return self.uuid is not None
 
     def __repr__(self) -> str:
-        return (
-            f"Entity(id={self.entity_id}, type={self.type_name!r}, "
-            f"pos={self.position})"
-        )
+        return f"Entity(id={self.entity_id}, type={self.type_name!r}, pos={self.position})"
 
 
 class EntityTracker:
     """Owns all entities visible to one bot."""
 
-    __slots__ = ("mc", "entities", "_by_uuid")
+    __slots__ = ("_by_uuid", "entities", "mc")
 
     def __init__(self, mc: McData) -> None:
         self.mc = mc
@@ -99,11 +96,11 @@ class EntityTracker:
         type_id: int | None = None,
         type_name: str | None = None,
         uuid: str | None = None,
-        position: Vec3 = Vec3(0.0, 0.0, 0.0),
+        position: Vec3 | None = None,
         yaw: float = 0.0,
         pitch: float = 0.0,
         head_yaw: float = 0.0,
-        velocity: Vec3 = Vec3(0.0, 0.0, 0.0),
+        velocity: Vec3 | None = None,
         metadata: dict[int, Any] | None = None,
         name: str | None = None,
     ) -> Entity:
@@ -117,11 +114,11 @@ class EntityTracker:
             type_name=type_name,
             uuid=uuid,
             name=name,
-            position=position,
+            position=position if position is not None else Vec3(0.0, 0.0, 0.0),
             yaw=yaw,
             pitch=pitch,
             head_yaw=head_yaw,
-            velocity=velocity,
+            velocity=velocity if velocity is not None else Vec3(0.0, 0.0, 0.0),
             metadata=dict(metadata or {}),
         )
         previous = self.entities.get(entity_id)
@@ -133,7 +130,9 @@ class EntityTracker:
         return entity
 
     # ------------------------------------------------------------------ updates
-    def move_relative(self, entity_id: int, dx: int, dy: int, dz: int, *, on_ground: bool = False) -> Entity | None:
+    def move_relative(
+        self, entity_id: int, dx: int, dy: int, dz: int, *, on_ground: bool = False
+    ) -> Entity | None:
         """Apply a relative move (1/32 block units)."""
         entity = self.entities.get(entity_id)
         if entity is None:
@@ -146,7 +145,9 @@ class EntityTracker:
         entity.on_ground = on_ground
         return entity
 
-    def look(self, entity_id: int, yaw: int, pitch: int, *, on_ground: bool = False) -> Entity | None:
+    def look(
+        self, entity_id: int, yaw: int, pitch: int, *, on_ground: bool = False
+    ) -> Entity | None:
         """Apply a rotation-only update."""
         entity = self.entities.get(entity_id)
         if entity is None:

@@ -18,10 +18,10 @@ access_token, xuid)`.
 from pyflayer.protocol.auth import OfflineAuth, MicrosoftAuth
 
 session = await OfflineAuth("Steve").login()
-print(session.uuid)   # b50ad385-...-style UUIDv3
+print(session.uuid)  # b50ad385-...-style UUIDv3
 
 auth = MicrosoftAuth(on_device_code=lambda code, uri: print(uri, code))
-session = await auth.login()    # device code -> XBL -> XSTS -> Minecraft profile
+session = await auth.login()  # device code -> XBL -> XSTS -> Minecraft profile
 ```
 
 ## Offline UUID

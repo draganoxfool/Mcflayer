@@ -65,24 +65,24 @@ class ProtocolClient:
     """
 
     __slots__ = (
-        "host",
-        "port",
-        "version",
         "auth",
-        "use_srv",
         "clock",
-        "connect_timeout",
-        "read_timeout",
-        "use_compression",
-        "connection",
-        "mc",
-        "registry",
-        "state",
-        "session",
-        "encrypted",
         "compression_threshold",
+        "connect_timeout",
+        "connection",
+        "encrypted",
+        "host",
+        "mc",
+        "port",
+        "read_timeout",
+        "registry",
+        "session",
         "skipped_packets",
+        "state",
         "unknown_packet_ids",
+        "use_compression",
+        "use_srv",
+        "version",
     )
 
     def __init__(

@@ -11,7 +11,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from pyflayer.models.vec3 import BlockPos, ChunkPos
 
-__all__ = ["WorldReader", "ActionHost", "PacketSink", "Dispatcher", "BlockMatcher"]
+__all__ = ["ActionHost", "BlockMatcher", "Dispatcher", "PacketSink", "WorldReader"]
 
 
 class BlockMatcher(Protocol):

@@ -12,14 +12,14 @@ legacy (1.8) path and a name-based path.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping
 
 from pyflayer.data.registries import BlockRegistry
 from pyflayer.data.schema import CollisionShapesJson
 from pyflayer.models.aabb import AABB
 
-__all__ = ["ShapeTable", "SHAPE_EMPTY", "SHAPE_FULL_BLOCK"]
+__all__ = ["SHAPE_EMPTY", "SHAPE_FULL_BLOCK", "ShapeTable"]
 
 SHAPE_EMPTY: tuple[AABB, ...] = ()
 SHAPE_FULL_BLOCK: tuple[AABB, ...] = (AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0),)

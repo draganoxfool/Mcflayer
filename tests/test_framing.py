@@ -6,7 +6,6 @@ import zlib
 import pytest
 
 from pyflayer.errors import CompressionError, ConnectionClosed, FramingError
-from pyflayer.protocol.buffer import PacketWriter
 from pyflayer.protocol.connection import Connection
 from pyflayer.protocol.framing import (
     MAX_UNCOMPRESSED,
@@ -135,6 +134,7 @@ async def test_connection_read_timeout_is_not_reported_as_reset() -> None:
 async def test_connection_closed_mid_frame() -> None:
     codec = FrameCodec()
     frame = codec.encode(payload())
+
     async def server(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         writer.write(frame[:3])
         await writer.drain()

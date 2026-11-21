@@ -25,12 +25,12 @@ import sys
 import threading
 
 from pyflayer import Bot
-from pyflayer.bot.interactions import use_item, place_block, break_block
-from pyflayer.bot.windows import click_slot, shift_click_slot, close_window
+from pyflayer.bot.interactions import break_block, place_block, use_item
+from pyflayer.bot.inventory import ClickMode
+from pyflayer.bot.windows import click_slot, close_window, shift_click_slot
 from pyflayer.errors import KickedError, PyFlayerError
 from pyflayer.events import ChatEvent, DeathEvent, DisconnectEvent, KickEvent, SpawnEvent
 from pyflayer.protocol.auth import MicrosoftAuth
-from pyflayer.bot.inventory import ClickMode
 
 HOST = "play.pika-network.net"
 PORT = 25565
@@ -72,7 +72,9 @@ async def join_bedwars(args: argparse.Namespace) -> Bot:
 
     @bot.event
     async def on_spawn(event: SpawnEvent) -> None:
-        print_line(f"spawned at ({event.position.x:.1f}, {event.position.y:.1f}, {event.position.z:.1f})")
+        print_line(
+            f"spawned at ({event.position.x:.1f}, {event.position.y:.1f}, {event.position.z:.1f})"
+        )
         # Open bed inventory (BedWars beds use window type 21 / chest with delay)
         # We'll demonstrate by looking for a chest window on connect
 
@@ -112,8 +114,10 @@ async def demo_inventory_interactions(bot: Bot) -> None:
 
     # Find open windows and demonstrate clicking
     for window_id, window in bot.inventory.windows.items():
-        print_line(f"Window opened: kind={window.kind}, "
-                   f"container_slots={window.container_slots}, window_id={window_id}")
+        print_line(
+            f"Window opened: kind={window.kind}, "
+            f"container_slots={window.container_slots}, window_id={window_id}"
+        )
         # Example: click the first slot (index 0) with left click, action 0
         # This works for chests (27 slots), furnaces (3 slots), etc.
         await click_slot(bot, window_id, 0, mode=ClickMode.LEFT)

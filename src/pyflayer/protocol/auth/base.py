@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-__all__ = ["Session", "AuthProvider", "StaticAuth"]
+__all__ = ["AuthProvider", "Session", "StaticAuth"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,7 +70,7 @@ class StaticAuth:
         online_join: When true, :meth:`join` calls the Mojang session server.
     """
 
-    __slots__ = ("_session", "_online_join")
+    __slots__ = ("_online_join", "_session")
 
     def __init__(self, session: Session, *, online_join: bool = False) -> None:
         self._session = session

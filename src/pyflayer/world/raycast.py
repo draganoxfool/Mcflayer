@@ -95,7 +95,7 @@ def raycast(
 
 
 class _UnitBox:
-    __slots__ = ("min_x", "min_y", "min_z", "max_x", "max_y", "max_z")
+    __slots__ = ("max_x", "max_y", "max_z", "min_x", "min_y", "min_z")
 
     def __init__(self) -> None:
         self.min_x = self.min_y = self.min_z = 0.0
@@ -113,7 +113,7 @@ def _first_boundary(origin: float, cell: int, direction: float, step: int) -> fl
 
 
 def _state(world: object, pos: BlockPos) -> int:
-    getter = getattr(world, "block_state_id_or")
+    getter = world.block_state_id_or
     return int(getter(pos, 0))
 
 
@@ -125,7 +125,7 @@ def _boxes(world: object, pos: BlockPos) -> tuple[object, ...]:
 def _block(world: object, pos: BlockPos) -> object | None:
     try:
         return world.block_at(pos)  # type: ignore[attr-defined]
-    except Exception:  # noqa: BLE001 - unloaded chunks simply have no block
+    except Exception:
         return None
 
 

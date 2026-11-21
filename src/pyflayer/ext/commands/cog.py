@@ -25,7 +25,7 @@ def listener(name: str | None = None) -> Callable[[Callable[..., Any]], Callable
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        setattr(func, "__cog_listener__", name or func.__name__)
+        func.__cog_listener__ = name or func.__name__
         return func
 
     return decorator
@@ -52,7 +52,7 @@ class CogMeta(type):
             elif isinstance(value, Loop):
                 loops.append((attr, value))
             elif callable(value) and hasattr(value, "__cog_listener__"):
-                listeners.append((getattr(value, "__cog_listener__"), value))
+                listeners.append((value.__cog_listener__, value))
         cls = super().__new__(mcls, name, bases, namespace)
         cls.__cog_commands__ = list(commands.values())
         cls.__cog_listeners__ = listeners
@@ -97,10 +97,7 @@ class Cog(metaclass=CogMeta):
 
     def get_listeners(self) -> list[tuple[str, Callable[..., Any]]]:
         """Event handler names and bound listener callables."""
-        return [
-            (name, getattr(self, func.__name__))
-            for name, func in self.__cog_listeners__
-        ]
+        return [(name, getattr(self, func.__name__)) for name, func in self.__cog_listeners__]
 
     def get_loops(self) -> list[Any]:
         """Loop instances declared on this cog, bound to this instance."""

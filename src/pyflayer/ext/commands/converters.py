@@ -8,6 +8,7 @@ callable annotation.
 
 from __future__ import annotations
 
+import inspect
 import types
 import typing
 from collections.abc import Awaitable, Callable
@@ -20,11 +21,11 @@ from pyflayer.models.enums import Dimension, GameMode
 __all__ = [
     "Converter",
     "ConverterT",
-    "IdentityConverter",
     "Greedy",
+    "IdentityConverter",
     "Range",
-    "resolve_converter",
     "convert",
+    "resolve_converter",
 ]
 
 T_co = TypeVar("T_co", covariant=True)
@@ -63,7 +64,7 @@ class Greedy:
 class _RangeAnnotation:
     """Marker returned by ``Range[T, lo, hi]`` at annotation-evaluation time."""
 
-    __slots__ = ("base", "minimum", "maximum")
+    __slots__ = ("base", "maximum", "minimum")
 
     def __init__(self, base: object, minimum: object, maximum: object) -> None:
         self.base = base
@@ -113,8 +114,8 @@ class _FloatConverter:
 
 
 class _BoolConverter:
-    _TRUE = {"1", "true", "yes", "on", "y"}
-    _FALSE = {"0", "false", "no", "off", "n"}
+    _TRUE = frozenset({"1", "true", "yes", "on", "y"})
+    _FALSE = frozenset({"0", "false", "no", "off", "n"})
 
     async def convert(self, ctx: Any, argument: str) -> bool:
         del ctx
@@ -133,9 +134,14 @@ class _EnumConverter:
     async def convert(self, ctx: Any, argument: str) -> Any:
         del ctx
         for member in self.enum:
-            if member.name.lower() == argument.lower() or str(member.value).lower() == argument.lower():
+            if (
+                member.name.lower() == argument.lower()
+                or str(member.value).lower() == argument.lower()
+            ):
                 return member
-        raise BadArgument(None, argument, f"expected one of {', '.join(m.name.lower() for m in self.enum)}")
+        raise BadArgument(
+            None, argument, f"expected one of {', '.join(m.name.lower() for m in self.enum)}"
+        )
 
 
 class _LiteralConverter:
@@ -149,9 +155,7 @@ class _LiteralConverter:
                 isinstance(value, str) and value.lower() == argument.lower()
             ):
                 return value
-        raise BadArgument(
-            None, argument, f"expected one of {', '.join(map(str, self.values))}"
-        )
+        raise BadArgument(None, argument, f"expected one of {', '.join(map(str, self.values))}")
 
 
 class _CallableConverter:
@@ -175,7 +179,7 @@ class _UnionConverter:
         for converter in self.converters:
             try:
                 return await _apply(converter, ctx, argument)
-            except Exception as exc:  # noqa: BLE001 - try the next union member
+            except Exception as exc:
                 errors.append(exc)
         raise BadUnionArgument(None, argument, errors)
 
@@ -239,12 +243,12 @@ async def _apply(converter: Any, ctx: Any, argument: str) -> Any:
             return await method(ctx, argument)
         except (BadArgument, BadUnionArgument):
             raise
-        except Exception as exc:  # noqa: BLE001 - wrap converter crashes
+        except Exception as exc:
             raise ConversionError(None, exc) from exc
     if isinstance(converter, type):
         try:
             return converter(argument)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise BadArgument(None, argument, f"could not convert to {converter.__name__}") from exc
     if callable(converter):
         result = converter(argument)
@@ -310,8 +314,5 @@ async def convert(ctx: Any, converter: Any, argument: str) -> Any:
     """Apply ``converter`` to ``argument``."""
     return await _apply(converter, ctx, argument)
 
-
-# Imported late to avoid a circular import at module load; ``inspect`` is cheap.
-import inspect  # noqa: E402
 
 inspect_empty = inspect.Parameter.empty  # type: ignore[attr-defined]

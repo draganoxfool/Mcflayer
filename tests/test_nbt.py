@@ -7,12 +7,12 @@ import pytest
 from pyflayer.errors import MalformedPacket
 from pyflayer.protocol.buffer import PacketReader
 from pyflayer.protocol.types.nbt import (
-    NBTList,
     TAG_BYTE,
     TAG_COMPOUND,
     TAG_INT,
     TAG_LIST,
     TAG_LONG,
+    NBTList,
     read_named_nbt,
     read_unnamed_nbt,
     write_named_nbt,
@@ -90,12 +90,7 @@ def test_depth_bomb_rejected() -> None:
 
 
 def test_negative_array_length_rejected() -> None:
-    raw = (
-        b"\x0a\x00\x00"
-        b"\x0b\x00\x01a"
-        + struct.pack(">i", -1)
-        + b"\x00"
-    )
+    raw = b"\x0a\x00\x00\x0b\x00\x01a" + struct.pack(">i", -1) + b"\x00"
     with pytest.raises(MalformedPacket):
         read_named_nbt(PacketReader(raw))
 

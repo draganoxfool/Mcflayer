@@ -18,6 +18,7 @@ from pyflayer.ext import commands, tasks
 
 bot = commands.Bot(version="1.8.9")
 
+
 class Miner(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -35,6 +36,7 @@ class Miner(commands.Cog):
     @tasks.loop(seconds=30)
     async def status(self):
         await self.bot.chat(f"health={self.bot.health}")
+
 
 async def setup(bot):
     await bot.add_cog(Miner(bot))
@@ -84,9 +86,11 @@ The parser understands:
 async def ping(ctx):
     await ctx.reply("pong")
 
+
 @commands.group(invoke_without_command=True)
 async def admin(ctx):
     await ctx.reply("admin: say | kick")
+
 
 @admin.command(name="say")
 async def admin_say(ctx, text: commands.Greedy[str]):
@@ -112,10 +116,12 @@ Failures become `BadArgument` (or `ConversionError` when a converter itself cras
 ```python
 from pyflayer.ext import commands
 
+
 @commands.command()
 @commands.check(lambda ctx: ctx.bot.health > 10)
 @commands.cooldown(1, 5, commands.BucketType.player)
 async def heal(ctx): ...
+
 
 @commands.command()
 @commands.is_owner()
@@ -179,6 +185,7 @@ Twenty reload cycles leave no leaked subscriptions or commands.
 class Options(commands.FlagConverter):
     count: int = commands.flag(default=1)
     silent: bool = commands.flag(default=False)
+
 
 @commands.command()
 async def broadcast(ctx, *, opts: Options):

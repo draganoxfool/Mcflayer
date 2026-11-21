@@ -19,7 +19,6 @@ from pyflayer.bot import Bot
 from pyflayer.data import Features, McData, VersionInfo
 from pyflayer.errors import PyFlayerError
 from pyflayer.events import ChatEvent, EventBus, JoinEvent, SpawnEvent
-from pyflayer.physics import ControlState, PhysicsEngine, PlayerState, TickDriver
 from pyflayer.models import (
     AABB,
     BlockPos,
@@ -32,6 +31,7 @@ from pyflayer.models import (
     SectionPos,
     Vec3,
 )
+from pyflayer.physics import ControlState, PhysicsEngine, PlayerState, TickDriver
 from pyflayer.protocol import (
     Connection,
     ConnectionState,
@@ -61,6 +61,8 @@ REFERENCE_VERSION = "1.8.9"
 
 __all__ = [
     "AABB",
+    "PROTOCOL_VERSION",
+    "REFERENCE_VERSION",
     "BlockPos",
     "BlockState",
     "Bot",
@@ -83,7 +85,6 @@ __all__ = [
     "ItemStack",
     "JoinEvent",
     "McData",
-    "PROTOCOL_VERSION",
     "Packet",
     "PacketReader",
     "PacketRegistry",
@@ -92,18 +93,17 @@ __all__ = [
     "PhysicsEngine",
     "PlayerState",
     "ProtocolClient",
-    "RayHit",
     "PyFlayerError",
-    "REFERENCE_VERSION",
+    "RayHit",
     "SectionPos",
     "ServerStatus",
     "SpawnEvent",
     "StateMachine",
     "TickDriver",
     "Vec3",
+    "VersionInfo",
     "World",
     "WorldSnapshot",
-    "VersionInfo",
     "__version__",
     "errors",
     "ping",

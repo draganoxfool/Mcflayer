@@ -19,6 +19,7 @@ from pyflayer.models.vec3 import BlockPos, ChunkPos, SectionPos, Vec3
 
 __all__ = [
     "AABB",
+    "EMPTY_ITEM",
     "BlockPos",
     "ChatComponent",
     "ChatMessage",
@@ -26,7 +27,6 @@ __all__ = [
     "ConnectionState",
     "Difficulty",
     "Dimension",
-    "EMPTY_ITEM",
     "Face",
     "GameMode",
     "Hand",

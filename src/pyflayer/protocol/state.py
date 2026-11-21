@@ -14,7 +14,8 @@ Examples:
     >>> sm.transition(ConnectionState.STATUS)
     Traceback (most recent call last):
     ...
-    pyflayer.errors.StateError: illegal connection state transition (current='login', target='status')
+    pyflayer.errors.StateError: illegal connection state transition
+        (current='login', target='status')
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ from typing import Final
 from pyflayer.errors import StateError
 from pyflayer.models.enums import ConnectionState
 
-__all__ = ["ConnectionState", "LEGAL_TRANSITIONS", "StateMachine"]
+__all__ = ["LEGAL_TRANSITIONS", "ConnectionState", "StateMachine"]
 
 #: ``state -> states it may move to``. ``closed`` is terminal.
 LEGAL_TRANSITIONS: Final[dict[ConnectionState, frozenset[ConnectionState]]] = {
@@ -36,12 +37,8 @@ LEGAL_TRANSITIONS: Final[dict[ConnectionState, frozenset[ConnectionState]]] = {
         {ConnectionState.CONFIGURATION, ConnectionState.PLAY, ConnectionState.CLOSED}
     ),
     # Servers may re-enter configuration from play (1.20.2+) and go back again.
-    ConnectionState.CONFIGURATION: frozenset(
-        {ConnectionState.PLAY, ConnectionState.CLOSED}
-    ),
-    ConnectionState.PLAY: frozenset(
-        {ConnectionState.CONFIGURATION, ConnectionState.CLOSED}
-    ),
+    ConnectionState.CONFIGURATION: frozenset({ConnectionState.PLAY, ConnectionState.CLOSED}),
+    ConnectionState.PLAY: frozenset({ConnectionState.CONFIGURATION, ConnectionState.CLOSED}),
     ConnectionState.CLOSED: frozenset(),
 }
 
@@ -56,7 +53,7 @@ class StateMachine:
         StateError: On an illegal transition, including any transition after ``closed``.
     """
 
-    __slots__ = ("_state", "_history")
+    __slots__ = ("_history", "_state")
 
     def __init__(self, initial: ConnectionState = ConnectionState.HANDSHAKING) -> None:
         self._state = initial

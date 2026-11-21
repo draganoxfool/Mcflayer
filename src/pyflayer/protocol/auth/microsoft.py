@@ -2,7 +2,8 @@
 
 Implements the chain a vanilla client uses for online mode:
 
-1. OAuth device-code flow against ``login.microsoftonline.com`` (no browser automation, no password);
+1. OAuth device-code flow against ``login.microsoftonline.com`` (no browser automation,
+   no password);
 2. Xbox Live user authentication (XBL);
 3. XSTS authorization for the Minecraft relying party;
 4. ``login_with_xbox`` for a Minecraft services access token;
@@ -30,7 +31,7 @@ from pyflayer.errors import AuthError
 from pyflayer.protocol.auth.base import Session
 from pyflayer.protocol.auth.session_join import join_session
 
-__all__ = ["MicrosoftAuth", "DeviceCode", "DEFAULT_CLIENT_ID"]
+__all__ = ["DEFAULT_CLIENT_ID", "DeviceCode", "MicrosoftAuth"]
 
 DEFAULT_CLIENT_ID = "00000000402b5328"
 DEVICE_CODE_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode"
@@ -41,13 +42,13 @@ MC_LOGIN_URL = "https://api.minecraftservices.com/authentication/login_with_xbox
 MC_PROFILE_URL = "https://api.minecraftservices.com/minecraft/profile"
 SCOPE = "XboxLive.signin offline_access"
 
-DeviceCodeCallback = Callable[[str, str], None | Awaitable[None]]
+DeviceCodeCallback = Callable[[str, str], Awaitable[None] | None]
 
 
 class DeviceCode:
     """A pending device-code authorization."""
 
-    __slots__ = ("user_code", "verification_uri", "device_code", "interval", "expires_in")
+    __slots__ = ("device_code", "expires_in", "interval", "user_code", "verification_uri")
 
     def __init__(self, data: dict[str, Any]) -> None:
         self.user_code = str(data.get("user_code", ""))
@@ -70,13 +71,13 @@ class MicrosoftAuth:
     """
 
     __slots__ = (
+        "_access_token",
+        "client",
         "client_id",
+        "clock",
         "on_device_code",
         "refresh_token",
-        "clock",
         "timeout",
-        "client",
-        "_access_token",
     )
 
     def __init__(
@@ -117,7 +118,9 @@ class MicrosoftAuth:
         token_data = await self._oauth_token(client)
         access_token = token_data.get("access_token")
         if not isinstance(access_token, str) or not access_token:
-            raise AuthError("Microsoft OAuth response is missing an access token", response=token_data)
+            raise AuthError(
+                "Microsoft OAuth response is missing an access token", response=token_data
+            )
         self._access_token = access_token
         self.refresh_token = str(token_data.get("refresh_token", "")) or self.refresh_token
         xbl = await self._xbox_user(client, self._access_token)
@@ -275,7 +278,9 @@ def _json_or_auth_error(
             raise AuthError("device-code authorization expired", error=error)
         if error in {"invalid_grant", "invalid_client"}:
             raise AuthError(
-                "Microsoft rejected the credentials", error=error, description=data.get("error_description")
+                "Microsoft rejected the credentials",
+                error=error,
+                description=data.get("error_description"),
             )
         raise AuthError(message, status=response.status_code, error=error)
     try:

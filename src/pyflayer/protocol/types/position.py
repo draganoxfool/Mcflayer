@@ -9,7 +9,7 @@ from __future__ import annotations
 from pyflayer.errors import MalformedPacket
 from pyflayer.models.vec3 import BlockPos
 
-__all__ = ["pack_position", "unpack_position", "packed_range_ok"]
+__all__ = ["pack_position", "packed_range_ok", "unpack_position"]
 
 
 def pack_position(pos: BlockPos, *, packed_xzy: bool = True) -> int:
@@ -45,11 +45,7 @@ def unpack_position(value: int, *, packed_xzy: bool = True) -> BlockPos:
 
 def packed_range_ok(pos: BlockPos) -> bool:
     """True when the position fits the 26/12/26-bit wire format."""
-    return (
-        -(2**25) <= pos.x < 2**25
-        and -(2**11) <= pos.y < 2**11
-        and -(2**25) <= pos.z < 2**25
-    )
+    return -(2**25) <= pos.x < 2**25 and -(2**11) <= pos.y < 2**11 and -(2**25) <= pos.z < 2**25
 
 
 def _signed(value: int, bits: int) -> int:

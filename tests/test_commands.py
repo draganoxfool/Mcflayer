@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import sys
 import textwrap
 from typing import Annotated, Any
 
@@ -42,7 +41,7 @@ def make_bot(**kwargs: Any) -> commands.Bot:
 
 def test_tokenize_handles_quotes_and_escapes() -> None:
     assert tokenize('say "hello world"') == ["say", "hello world"]
-    assert tokenize(r'say hello\ world') == ["say", "hello world"]
+    assert tokenize(r"say hello\ world") == ["say", "hello world"]
     assert tokenize('a "" b') == ["a", "", "b"]
 
 
@@ -86,7 +85,7 @@ async def test_prefix_and_addressing_dispatch() -> None:
     seen.clear()
 
     @plain.command()
-    async def ping(ctx: commands.Context) -> None:
+    async def plain_ping(ctx: commands.Context) -> None:
         seen.append((ctx.sender_name, ctx.prefix))
 
     await plain.process_message(ChatMessage(content="!ping", sender="Alex"))
@@ -125,7 +124,12 @@ async def test_decorated_name_mentions_dispatch() -> None:
     async def echo(ctx: commands.Context, text: str) -> None:
         got.append(text)
 
-    for content in ("@Steve echo hello", "<Steve> echo hello", "@Steve: echo hello", "Steve, echo hi"):
+    for content in (
+        "@Steve echo hello",
+        "<Steve> echo hello",
+        "@Steve: echo hello",
+        "Steve, echo hi",
+    ):
         await bot.process_message(ChatMessage(content=content, sender="Alex"))
     assert got == ["hello", "hello", "hello", "hi"]
 
@@ -176,10 +180,9 @@ async def test_context_reply_strips_leading_command_slash() -> None:
 
         await bot.connect()
         task = asyncio.create_task(bot.run())
-        await bot.dispatch_command("unsafe", author="Alex")
-        async with asyncio.timeout(2):
-            while not server.chats:
-                await asyncio.sleep(0.01)
+        async with bot.events.expect(ChatEvent, timeout=2) as chat_event:
+            await bot.dispatch_command("unsafe", author="Alex")
+            await chat_event
         assert server.chats == ["say pwned"]
         await bot.close()
         await asyncio.gather(task, return_exceptions=True)
@@ -199,7 +202,9 @@ async def test_converters_and_range() -> None:
     got: list[tuple[int, int]] = []
 
     @bot.command()
-    async def give(ctx: commands.Context, count: int, bounded: commands.Range[int, 1, 10] = 1) -> None:
+    async def give(
+        ctx: commands.Context, count: int, bounded: commands.Range[int, 1, 10] = 1
+    ) -> None:
         got.append((count, bounded))
 
     await bot.dispatch_command("give 5 10", author="Alex", is_whisper=True)
@@ -313,13 +318,9 @@ async def test_max_concurrency_wait_queues_instead_of_rejecting() -> None:
         await release.wait()
         finished.append(ctx.sender_name)
 
-    first = asyncio.create_task(
-        bot.dispatch_command("slow", author="Alex", is_whisper=True)
-    )
+    first = asyncio.create_task(bot.dispatch_command("slow", author="Alex", is_whisper=True))
     await _settle()
-    second = asyncio.create_task(
-        bot.dispatch_command("slow", author="Bob", is_whisper=True)
-    )
+    second = asyncio.create_task(bot.dispatch_command("slow", author="Bob", is_whisper=True))
     await _settle()
     assert started == ["Alex"]
 
@@ -442,7 +443,7 @@ async def test_cog_command_error_default_allows_command_handler() -> None:
 
 
 EXTENSION = textwrap.dedent(
-    '''
+    """
     from pyflayer.ext import commands
 
     class ExtCog(commands.Cog):
@@ -459,12 +460,13 @@ EXTENSION = textwrap.dedent(
 
     async def teardown(bot):
         pass
-    '''
+    """
 )
 
 
-async def test_extension_load_unload_and_reload_no_leaks(monkeypatch: pytest.MonkeyPatch,
-                                                         tmp_path: Any) -> None:
+async def test_extension_load_unload_and_reload_no_leaks(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
     (tmp_path / "extmod.py").write_text(EXTENSION)
     monkeypatch.syspath_prepend(str(tmp_path))
     bot = make_bot()
@@ -502,7 +504,7 @@ async def test_broken_reload_rolls_back(monkeypatch: pytest.MonkeyPatch, tmp_pat
 
     module.write_text(
         textwrap.dedent(
-            '''
+            """
             from pyflayer.ext import commands
 
             class BrokenCog(commands.Cog):
@@ -513,7 +515,7 @@ async def test_broken_reload_rolls_back(monkeypatch: pytest.MonkeyPatch, tmp_pat
             async def setup(bot):
                 await bot.add_cog(BrokenCog(bot))
                 raise RuntimeError("boom")
-            '''
+            """
         )
     )
     with pytest.raises(ExtensionFailed):
@@ -581,9 +583,7 @@ async def test_loop_aligned_to_physics_ticks() -> None:
     await _settle()
 
     for index in range(10):
-        bot.events.dispatch(
-            PhysicsTickEvent(tick=index, position=Vec3(0, 64, 0), on_ground=True)
-        )
+        bot.events.dispatch(PhysicsTickEvent(tick=index, position=Vec3(0, 64, 0), on_ground=True))
         await _settle()
 
     assert ticks == [1, 2, 3]

@@ -12,25 +12,25 @@ from typing import Any
 from pyflayer.errors import PyFlayerError
 
 __all__ = [
-    "CommandError",
-    "CommandPrefixError",
-    "CommandNotFound",
-    "UserInputError",
-    "MissingRequiredArgument",
     "BadArgument",
-    "TooManyArguments",
     "BadUnionArgument",
-    "ConversionError",
-    "CheckFailure",
-    "NotOwner",
     "CheckAnyFailure",
-    "CommandOnCooldown",
-    "MaxConcurrencyReached",
+    "CheckFailure",
+    "CommandError",
     "CommandInvokeError",
-    "ExtensionError",
-    "ExtensionNotLoaded",
+    "CommandNotFound",
+    "CommandOnCooldown",
+    "CommandPrefixError",
+    "ConversionError",
     "ExtensionAlreadyLoaded",
+    "ExtensionError",
     "ExtensionFailed",
+    "ExtensionNotLoaded",
+    "MaxConcurrencyReached",
+    "MissingRequiredArgument",
+    "NotOwner",
+    "TooManyArguments",
+    "UserInputError",
 ]
 
 
@@ -66,7 +66,9 @@ class CommandNotFound(CommandError):
 class UserInputError(CommandError):
     """The caller supplied arguments that could not be used."""
 
-    def __init__(self, message: str = "invalid input", *, param: object = None, **fields: Any) -> None:
+    def __init__(
+        self, message: str = "invalid input", *, param: object = None, **fields: Any
+    ) -> None:
         super().__init__(message, param=param, **fields)
         self.param = param
 
@@ -86,7 +88,11 @@ class BadArgument(UserInputError):
     def __init__(self, param: object, argument: str, reason: str, **fields: Any) -> None:
         name = getattr(param, "name", param)
         super().__init__(
-            f"bad argument for {name!r}: {reason}", param=param, argument=argument, reason=reason, **fields
+            f"bad argument for {name!r}: {reason}",
+            param=param,
+            argument=argument,
+            reason=reason,
+            **fields,
         )
         self.argument = argument
         self.reason = reason
@@ -99,12 +105,16 @@ class TooManyArguments(UserInputError):
 class BadUnionArgument(UserInputError):
     """No member of a ``Union`` converter accepted the argument."""
 
-    def __init__(self, param: object, argument: str, errors: list[BaseException] | None = None,
-                 **fields: Any) -> None:
+    def __init__(
+        self, param: object, argument: str, errors: list[BaseException] | None = None, **fields: Any
+    ) -> None:
         name = getattr(param, "name", param)
         super().__init__(
-            f"could not convert {argument!r} for {name!r}", param=param, argument=argument,
-            errors=errors or [], **fields,
+            f"could not convert {argument!r} for {name!r}",
+            param=param,
+            argument=argument,
+            errors=errors or [],
+            **fields,
         )
         self.argument = argument
         self.errors = errors or []
@@ -116,7 +126,9 @@ class ConversionError(UserInputError):
     def __init__(self, param: object, original: BaseException | None = None, **fields: Any) -> None:
         super().__init__(
             f"converter for {getattr(param, 'name', param)!r} raised {original!r}",
-            param=param, original=original, **fields,
+            param=param,
+            original=original,
+            **fields,
         )
         self.original = original
 
@@ -132,9 +144,15 @@ class NotOwner(CheckFailure):
 class CheckAnyFailure(CheckFailure):
     """Every check in a ``check_any`` group failed."""
 
-    def __init__(self, checks: list[object] | None = None, errors: list[BaseException] | None = None,
-                 **fields: Any) -> None:
-        super().__init__("none of the checks passed", checks=checks or [], errors=errors or [], **fields)
+    def __init__(
+        self,
+        checks: list[object] | None = None,
+        errors: list[BaseException] | None = None,
+        **fields: Any,
+    ) -> None:
+        super().__init__(
+            "none of the checks passed", checks=checks or [], errors=errors or [], **fields
+        )
         self.checks = checks or []
         self.errors = errors or []
 
@@ -143,7 +161,9 @@ class CommandOnCooldown(CheckFailure):
     """The command is cooling down for this bucket."""
 
     def __init__(self, retry_after: float, **fields: Any) -> None:
-        super().__init__(f"command on cooldown for {retry_after:.2f}s", retry_after=retry_after, **fields)
+        super().__init__(
+            f"command on cooldown for {retry_after:.2f}s", retry_after=retry_after, **fields
+        )
         self.retry_after = retry_after
 
 

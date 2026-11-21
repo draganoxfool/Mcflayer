@@ -27,8 +27,8 @@ directory.
 from pyflayer.data import McData
 
 mc = McData.load("1.8.9")
-print(mc.version.protocol)   # 47
-print(mc.version.key)        # "1.8"
+print(mc.version.protocol)  # 47
+print(mc.version.key)  # "1.8"
 print(mc.features.teleport_confirm)  # False
 ```
 
@@ -59,7 +59,7 @@ Registries support lookup by name or numeric id and raise `MissingRegistryEntry`
 `get()` returns `None` instead.
 
 ```python
-stone = mc.blocks["stone"]            # minecraft:stone
+stone = mc.blocks["stone"]  # minecraft:stone
 assert stone.id == 1
 assert mc.blocks[1].name == "stone"
 assert mc.blocks.get("not_a_block") is None
@@ -76,11 +76,11 @@ from pyflayer.data import Features
 
 features = Features.for_version("1.8.9")
 print(features.position_packed_xzy)  # False
-print(features.teleport_confirm)     # False
+print(features.teleport_confirm)  # False
 print(features.supports("item_components"))  # False
 
 modern = Features.for_version("1.20.6")
-print(modern.item_components)        # True (protocol 766+)
+print(modern.item_components)  # True (protocol 766+)
 ```
 
 | Flag | Meaning |
@@ -128,9 +128,9 @@ print(vi.release)  # (1, 8, 8)
 ```python
 from pyflayer.data import version_for_protocol, version_key
 
-version_key("1.8.9")        # "1.8"
-version_key(47)             # "1.8"
-version_for_protocol(47)    # "1.8"
+version_key("1.8.9")  # "1.8"
+version_key(47)  # "1.8"
+version_for_protocol(47)  # "1.8"
 ```
 
 Aliases map 1.8.x to the data key `1.8`. `version_key()` raises `UnsupportedVersion` for a protocol

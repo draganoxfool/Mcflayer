@@ -176,7 +176,9 @@ def test_player_info_property_signature_is_consumed(registry: PacketRegistry) ->
     writer.write_varint(42)  # ping
     writer.write_bool(False)  # no display name
 
-    payload = encode_varint(registry.packet_id("play", "toClient", "player_info")) + writer.to_bytes()
+    payload = (
+        encode_varint(registry.packet_id("play", "toClient", "player_info")) + writer.to_bytes()
+    )
     packet = registry.decode("play", "toClient", payload)
     entry = packet.fields["data"][0]
     assert entry["gamemode"] == 0

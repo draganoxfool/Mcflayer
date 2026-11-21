@@ -37,6 +37,7 @@ async def tick(tick_number: int) -> None:
     global state
     state = engine.step(state, ControlState(forward=1.0, yaw=0.0), world)
 
+
 asyncio.run(TickDriver(MonotonicClock()).run(tick))
 ```
 

@@ -24,7 +24,7 @@ from pyflayer.models.text import ChatComponent
 from pyflayer.protocol.buffer import PacketReader, PacketWriter
 from pyflayer.protocol.connection import DEFAULT_PORT, Connection
 
-__all__ = ["ServerStatus", "StatusPlayer", "ping", "main"]
+__all__ = ["ServerStatus", "StatusPlayer", "main", "ping"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,7 +145,7 @@ async def ping(
     *,
     protocol: str | int = "1.8.9",
     use_srv: bool = True,
-    timeout: float = 5.0,
+    timeout: float = 5.0,  # noqa: ASYNC109 - public overall timeout option
     clock: Clock | None = None,
 ) -> ServerStatus:
     """Ping a server and return its status.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from pyflayer.bot.inventory import HOTBAR_START, Inventory, PLAYER_WINDOW, Window
+from pyflayer.bot.inventory import HOTBAR_START, Inventory
 from pyflayer.models.items import ItemStack
 
 

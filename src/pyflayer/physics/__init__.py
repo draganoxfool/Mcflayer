@@ -15,18 +15,18 @@ from pyflayer.physics.state import (
 from pyflayer.physics.tick import TickDriver
 
 __all__ = [
-    "ControlState",
     "GRAVITY",
     "JUMP_VELOCITY",
-    "Medium",
-    "MoveResult",
     "PLAYER_EYE_HEIGHT",
     "PLAYER_HEIGHT",
     "PLAYER_SPEED",
     "PLAYER_WIDTH",
+    "STEP_HEIGHT",
+    "ControlState",
+    "Medium",
+    "MoveResult",
     "PhysicsEngine",
     "PlayerState",
-    "STEP_HEIGHT",
     "TickDriver",
     "move_box",
     "sample_medium",

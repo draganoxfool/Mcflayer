@@ -1,7 +1,7 @@
 """Player inventory and window state (1.8 slot layout).
 
-Window 0 is the player inventory: slot 0 is the crafting output, 1–4 the crafting grid, 5–8 armour,
-9–35 the main inventory and 36–44 the hotbar. Container windows append their own slots and then a
+Window 0 is the player inventory: slot 0 is the crafting output, 1-4 the crafting grid, 5-8 armour,
+9-35 the main inventory and 36-44 the hotbar. Container windows append their own slots and then a
 copy of the player inventory; slot numbers sent in clicks are raw window slots, not hotbar indices.
 
 The inventory tracks server-confirmed contents. :meth:`Bot.click_slot` sends a click and lets the
@@ -23,14 +23,14 @@ from enum import IntEnum
 from pyflayer.models.items import ItemStack
 
 __all__ = [
+    "CURSOR_EVENT_SLOT",
+    "CURSOR_SLOT",
+    "HOTBAR_SLOTS",
+    "HOTBAR_START",
+    "PLAYER_WINDOW",
+    "ClickMode",
     "Inventory",
     "Window",
-    "ClickMode",
-    "PLAYER_WINDOW",
-    "HOTBAR_START",
-    "HOTBAR_SLOTS",
-    "CURSOR_SLOT",
-    "CURSOR_EVENT_SLOT",
 ]
 
 PLAYER_WINDOW = 0
@@ -99,7 +99,7 @@ class Window:
 class Inventory:
     """All open windows, the selected hotbar slot and the cursor stack."""
 
-    __slots__ = ("windows", "held_slot", "cursor", "_click_action")
+    __slots__ = ("_click_action", "cursor", "held_slot", "windows")
 
     def __init__(self) -> None:
         self.windows: dict[int, Window] = {PLAYER_WINDOW: Window(PLAYER_WINDOW)}

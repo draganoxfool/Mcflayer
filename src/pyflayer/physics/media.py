@@ -40,7 +40,7 @@ class Medium:
 def _block_name(world: _WorldReader, pos: BlockPos) -> str:
     try:
         block = world.block_at(pos)
-    except Exception:  # noqa: BLE001 - unloaded chunks are air for physics
+    except Exception:
         return ""
     return str(getattr(block, "name", "")).removeprefix("minecraft:")
 

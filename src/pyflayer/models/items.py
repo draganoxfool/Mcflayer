@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-__all__ = ["ItemStack", "EMPTY_ITEM"]
+__all__ = ["EMPTY_ITEM", "ItemStack"]
 
 
 @dataclass(frozen=True, slots=True)

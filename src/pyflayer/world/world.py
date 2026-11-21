@@ -1,7 +1,7 @@
 """Mutable world for one dimension.
 
-The world owns a ``{ChunkPos: ChunkColumn}`` map and only mutates on the event loop. Reads go through
-:class:`~pyflayer.world.view.WorldSnapshot` for worker threads.
+The world owns a ``{ChunkPos: ChunkColumn}`` map and only mutates on the event loop. Reads go
+through :class:`~pyflayer.world.view.WorldSnapshot` for worker threads.
 
 Examples:
     >>> world = World(McData.load("1.8.9"))
@@ -12,8 +12,7 @@ Examples:
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable, Sequence
-from typing import Callable
+from collections.abc import Callable, Iterable, Sequence
 
 import numpy as np
 
@@ -33,7 +32,7 @@ __all__ = ["World"]
 class World:
     """Mutable world state for one dimension."""
 
-    __slots__ = ("mc", "chunks", "min_y", "height", "dimension", "_blocks")
+    __slots__ = ("_blocks", "chunks", "dimension", "height", "mc", "min_y")
 
     def __init__(
         self,
@@ -169,11 +168,15 @@ class World:
             block = self.mc.blocks.get(matching)
             if block is None:
                 return []
-            predicate: Callable[[np.ndarray], np.ndarray] = (
-                lambda states, block_id=block.id: (states >> 4) == block_id
-            )
+            block_id = block.id
+
+            def predicate(states: np.ndarray) -> np.ndarray:
+                return (states >> 4) == block_id
         elif isinstance(matching, int):
-            predicate = lambda states, state_id=matching: states == state_id
+            state_id = matching
+
+            def predicate(states: np.ndarray) -> np.ndarray:
+                return states == state_id
         else:
             user_predicate = matching
             predicate = np.vectorize(lambda value: bool(user_predicate(int(value))))
@@ -194,9 +197,7 @@ class World:
                         local_x = local_index & 15
                         local_z = (local_index >> 4) & 15
                         y = column.min_y + index * 16 + (local_index >> 8)
-                        pos = BlockPos(
-                            column.pos.x * 16 + local_x, y, column.pos.z * 16 + local_z
-                        )
+                        pos = BlockPos(column.pos.x * 16 + local_x, y, column.pos.z * 16 + local_z)
                         distance = center.distance_to(pos.to_vec3())
                         if distance <= within:
                             found.append((distance, pos))
@@ -212,9 +213,7 @@ class World:
         include_fluids: bool = False,
     ) -> RayHit | None:
         """Voxel raycast over collision shapes (DDA)."""
-        return raycast(
-            self, origin, direction, max_dist, include_fluids=include_fluids
-        )
+        return raycast(self, origin, direction, max_dist, include_fluids=include_fluids)
 
     # ------------------------------------------------------------------ snapshots
     def snapshot(self, bounds: Bounds | None = None) -> WorldSnapshot:

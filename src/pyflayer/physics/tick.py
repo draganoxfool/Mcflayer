@@ -45,21 +45,21 @@ class TickDriver:
     """
 
     __slots__ = (
+        "_interval_m2",
+        "_interval_mean",
+        "_intervals",
+        "_last_tick_at",
+        "_next",
+        "_started_at",
+        "_stopped",
+        "catch_up_events",
+        "catch_up_ticks",
         "clock",
-        "tps",
+        "dropped_ticks",
+        "jitter",
         "max_catch_up",
         "tick",
-        "dropped_ticks",
-        "catch_up_ticks",
-        "catch_up_events",
-        "jitter",
-        "_intervals",
-        "_next",
-        "_stopped",
-        "_started_at",
-        "_last_tick_at",
-        "_interval_mean",
-        "_interval_m2",
+        "tps",
     )
 
     def __init__(self, clock: Clock, *, tps: int = 20, max_catch_up: int = 2) -> None:
@@ -135,7 +135,7 @@ class TickDriver:
             late = behind >= 1.0 - _DEADLINE_EPSILON
             if behind > self.max_catch_up + 1:
                 # Keep the newest ``max_catch_up`` ticks and discard the rest of the backlog.
-                drop = int(math.ceil(behind - self.max_catch_up))
+                drop = math.ceil(behind - self.max_catch_up)
                 self.dropped_ticks += drop
                 self._next += drop * self.interval
             if late:

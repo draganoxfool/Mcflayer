@@ -9,7 +9,7 @@ from typing import Protocol
 from pyflayer.models.aabb import AABB
 from pyflayer.models.vec3 import BlockPos, Vec3
 
-__all__ = ["MoveResult", "move_box", "STEP_HEIGHT"]
+__all__ = ["STEP_HEIGHT", "MoveResult", "move_box"]
 
 _EPS = 1e-7
 STEP_HEIGHT = 0.6
@@ -69,9 +69,7 @@ def move_box(
     )
 
 
-def _try_step(
-    box: AABB, delta: Vec3, world: _WorldReader, step_height: float
-) -> MoveResult | None:
+def _try_step(box: AABB, delta: Vec3, world: _WorldReader, step_height: float) -> MoveResult | None:
     raised = box.translated(Vec3(0.0, step_height, 0.0))
     if _collides(raised, world):
         return None
@@ -123,9 +121,13 @@ def _clip_axis(
 
 def _offset(box: AABB, axis: int, amount: float) -> AABB:
     if axis == 0:
-        return AABB(box.min_x + amount, box.min_y, box.min_z, box.max_x + amount, box.max_y, box.max_z)
+        return AABB(
+            box.min_x + amount, box.min_y, box.min_z, box.max_x + amount, box.max_y, box.max_z
+        )
     if axis == 1:
-        return AABB(box.min_x, box.min_y + amount, box.min_z, box.max_x, box.max_y + amount, box.max_z)
+        return AABB(
+            box.min_x, box.min_y + amount, box.min_z, box.max_x, box.max_y + amount, box.max_z
+        )
     return AABB(box.min_x, box.min_y, box.min_z + amount, box.max_x, box.max_y, box.max_z + amount)
 
 

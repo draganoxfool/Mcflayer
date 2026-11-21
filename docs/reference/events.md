@@ -105,13 +105,16 @@ import pyflayer
 
 bot = pyflayer.Bot("Steve", host="play.pika-network.net")
 
+
 @bot.event
 async def on_chat(event):
     print(f"[{event.message.sender}] {event.message.content}")
 
+
 @bot.event
 async def on_spawn(event):
     print(f"Spawned at {event.position}")
+
 
 await bot.connect()
 await bot.run()

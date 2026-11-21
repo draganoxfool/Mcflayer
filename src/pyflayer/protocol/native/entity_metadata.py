@@ -24,7 +24,7 @@ from pyflayer.models.items import ItemStack
 from pyflayer.protocol.buffer import PacketReader, PacketWriter
 from pyflayer.protocol.types.slot import read_slot, write_slot
 
-__all__ = ["EntityMetadataLoopCodec", "METADATA_END"]
+__all__ = ["METADATA_END", "EntityMetadataLoopCodec"]
 
 METADATA_END = 0x7F
 
@@ -50,10 +50,7 @@ class EntityMetadataLoopCodec:
 
     def write(self, writer: PacketWriter, value: Any, ctx: dict[str, Any]) -> None:
         del ctx
-        if isinstance(value, dict):
-            entries = value.items()
-        else:
-            entries = value
+        entries = value.items() if isinstance(value, dict) else value
         for key, raw in entries:
             if isinstance(raw, tuple) and len(raw) == 2 and isinstance(raw[0], int):
                 value_type, item = raw

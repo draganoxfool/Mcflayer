@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from pyflayer.models.aabb import AABB
 from pyflayer.models.enums import Face, GameMode
 from pyflayer.models.items import ItemStack
@@ -46,7 +44,9 @@ def test_chat_component_flattening() -> None:
 
 
 def test_chat_component_translate() -> None:
-    comp = ChatComponent.parse({"translate": "chat.type.text", "with": [{"text": "A"}, {"text": "hi"}]})
+    comp = ChatComponent.parse(
+        {"translate": "chat.type.text", "with": [{"text": "A"}, {"text": "hi"}]}
+    )
     assert comp.plain_text(translate={"chat.type.text": "<{}> {}"}) == "<A> hi"
 
 

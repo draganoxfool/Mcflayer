@@ -24,14 +24,12 @@ FLOWING_WATER = 8 << 4
 
 
 def section_bytes(states: np.ndarray, *, sky: bool = True) -> bytes:
-    return (
-        states.astype("<u2").tobytes()
-        + bytes(2048)
-        + (bytes(2048) if sky else b"")
-    )
+    return states.astype("<u2").tobytes() + bytes(2048) + (bytes(2048) if sky else b"")
 
 
-def one_section_chunk(section_y: int = 4, state: int = STONE, *, sky: bool = True) -> tuple[bytes, int]:
+def one_section_chunk(
+    section_y: int = 4, state: int = STONE, *, sky: bool = True
+) -> tuple[bytes, int]:
     # Only the bottom layer of the section is solid, so block (0, 64, 0) is stone and the block
     # above it is air (a useful raycast/placement fixture).
     states = np.zeros(4096, dtype=np.uint16)
@@ -39,7 +37,9 @@ def one_section_chunk(section_y: int = 4, state: int = STONE, *, sky: bool = Tru
     return section_bytes(states, sky=sky) + bytes([1]) * 256, 1 << section_y
 
 
-def build_column(pos: ChunkPos = ChunkPos(0, 0), *, state: int = STONE) -> ChunkColumn:
+def build_column(pos: ChunkPos | None = None, *, state: int = STONE) -> ChunkColumn:
+    if pos is None:
+        pos = ChunkPos(0, 0)
     data, bit_map = one_section_chunk(state=state)
     decoded = decode_legacy_chunk(data, bit_map, sky_light=True, include_biomes=True)
     return ChunkColumn.from_legacy(pos, decoded)
@@ -133,9 +133,7 @@ def test_snapshot_bounds() -> None:
 def test_multi_block_change_and_unload() -> None:
     world = World(MC)
     world.apply_chunk(build_column())
-    applied = world.apply_multi_block_change(
-        ChunkPos(0, 0), [(1, 64, 2, DIRT), (0, 0, 0, STONE)]
-    )
+    applied = world.apply_multi_block_change(ChunkPos(0, 0), [(1, 64, 2, DIRT), (0, 0, 0, STONE)])
     assert len(applied) == 2
     assert world.block_state_id(BlockPos(1, 64, 2)) == DIRT
     assert world.block_state_id(BlockPos(0, 0, 0)) == STONE
@@ -154,9 +152,7 @@ def test_find_blocks_nearest_first() -> None:
 
     found = world.find_blocks("stone", within=32, around=Vec3(0.5, 64.5, 0.5), count=2)
     assert found == [BlockPos(1, 64, 1), BlockPos(10, 64, 10)]
-    assert world.find_blocks("stone", within=2, around=Vec3(0.5, 64.5, 0.5)) == [
-        BlockPos(1, 64, 1)
-    ]
+    assert world.find_blocks("stone", within=2, around=Vec3(0.5, 64.5, 0.5)) == [BlockPos(1, 64, 1)]
     assert world.find_blocks("not_a_block") == []
     assert world.find_blocks(
         lambda state: state == STONE, within=8, around=Vec3(0.5, 64.5, 0.5), count=1

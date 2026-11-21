@@ -26,11 +26,11 @@ if TYPE_CHECKING:
     from pyflayer.bot.bot import Bot
 
 __all__ = [
-    "select_hotbar",
     "click_slot",
-    "shift_click_slot",
-    "drop_slot",
     "close_window",
+    "drop_slot",
+    "select_hotbar",
+    "shift_click_slot",
 ]
 
 
@@ -41,9 +41,7 @@ async def select_hotbar(bot: Bot, slot: int) -> None:
         raise ValueError(f"hotbar slot must be 0..{HOTBAR_SLOTS - 1}, got {slot}")
     await bot._send_play("held_item_slot", {"slotId": slot})
     bot.inventory.set_held_slot(slot)
-    bot.events.dispatch(
-        InventoryChangedEvent(0, HOTBAR_START + slot, bot.inventory.held_item)
-    )
+    bot.events.dispatch(InventoryChangedEvent(0, HOTBAR_START + slot, bot.inventory.held_item))
 
 
 async def click_slot(
@@ -76,17 +74,13 @@ async def click_slot(
     return action
 
 
-async def shift_click_slot(
-    bot: Bot, slot: int, *, button: int = 0, window_id: int = 0
-) -> int:
+async def shift_click_slot(bot: Bot, slot: int, *, button: int = 0, window_id: int = 0) -> int:
     """Shift-click a slot (quick-move between container and inventory)."""
     mode = ClickMode.SHIFT_LEFT if button == 0 else ClickMode.SHIFT_RIGHT
     return await click_slot(bot, slot, button=button, mode=mode, window_id=window_id)
 
 
-async def drop_slot(
-    bot: Bot, slot: int, *, all: bool = False, window_id: int = 0
-) -> int:
+async def drop_slot(bot: Bot, slot: int, *, all: bool = False, window_id: int = 0) -> int:
     """Drop one item or the whole stack from a slot."""
     mode = ClickMode.DROP_ALL if all else ClickMode.DROP
     return await click_slot(bot, slot, mode=mode, window_id=window_id)

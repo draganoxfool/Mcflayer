@@ -42,9 +42,12 @@ discord.py:
 
 ```python
 bot = commands.Bot(prefix="!")
+
+
 @bot.command()
 async def ping(ctx):
     await ctx.send("pong")
+
 
 # "!ping" in chat
 ```
@@ -52,10 +55,13 @@ async def ping(ctx):
 mcflayer:
 
 ```python
-bot = commands.Bot(version="1.8.9", prefix="!")   # prefix is optional
+bot = commands.Bot(version="1.8.9", prefix="!")  # prefix is optional
+
+
 @bot.command()
 async def ping(ctx):
     await ctx.reply("pong")
+
 
 # "!ping" or "Steve !ping" in public chat, or a whisper "!ping",
 # or: await bot.dispatch_command("ping", author="Alex", is_whisper=True)

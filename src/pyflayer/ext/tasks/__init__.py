@@ -4,4 +4,4 @@ from __future__ import annotations
 
 from pyflayer.ext.tasks.loop import MISSING, Loop, loop
 
-__all__ = ["Loop", "MISSING", "loop"]
+__all__ = ["MISSING", "Loop", "loop"]

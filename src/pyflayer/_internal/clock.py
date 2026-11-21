@@ -18,7 +18,7 @@ import itertools
 import time
 from typing import Protocol, runtime_checkable
 
-__all__ = ["Clock", "MonotonicClock", "FakeClock"]
+__all__ = ["Clock", "FakeClock", "MonotonicClock"]
 
 
 @runtime_checkable
@@ -62,7 +62,7 @@ class FakeClock:
     time before the call returns.
     """
 
-    __slots__ = ("_now", "_sleepers", "_seq")
+    __slots__ = ("_now", "_seq", "_sleepers")
 
     def __init__(self, start: float = 0.0) -> None:
         self._now = start
@@ -92,7 +92,7 @@ class FakeClock:
         """Move time forward, waking every sleeper whose deadline is reached."""
         if seconds < 0:
             msg = "FakeClock cannot move backwards"
-            raise ValueError(msg)  # noqa: TRY003 - internal test clock; not a library API error
+            raise ValueError(msg)
         target = self._now + seconds
         while self._sleepers and self._sleepers[0][0] <= target:
             deadline, _seq, future = heapq.heappop(self._sleepers)
@@ -101,7 +101,8 @@ class FakeClock:
                 future.set_result(None)
         self._now = target
         # Sleepers are resolved; awakened tasks run on the next event-loop turn. Tests that need a
-        # fully settled state call ``await asyncio.sleep(0)`` (or ``await clock.advance_async(...)``).
+        # fully settled state call ``await asyncio.sleep(0)`` or
+        # ``await clock.advance_async(...)``.
 
     async def advance_async(self, seconds: float) -> None:
         """Advance time and let awakened tasks run before returning."""

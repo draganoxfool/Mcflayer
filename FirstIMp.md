@@ -226,8 +226,11 @@ from pyflayer.ext import commands, tasks
 
 bot = commands.Bot(command_prefix="!", version="1.20.4")
 
+
 class Miner(commands.Cog):
-    def __init__(self, bot): self.bot = bot; self.status.start()
+    def __init__(self, bot):
+        self.bot = bot
+        self.status.start()
 
     @commands.Cog.listener()
     async def on_spawn(self): ...
@@ -235,12 +238,15 @@ class Miner(commands.Cog):
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.player)
     async def mine(self, ctx, block: pyflayer.Block, count: commands.Range[int, 1, 64] = 1):
-        async with ctx.bot.actions.run(MineBlocks(block, count), priority=Priority.WORK): ...
+        async with ctx.bot.actions.run(MineBlocks(block, count), priority=Priority.WORK):
+            ...
 
     @tasks.loop(seconds=30)
     async def status(self): ...
 
-async def setup(bot): await bot.add_cog(Miner(bot))
+
+async def setup(bot):
+    await bot.add_cog(Miner(bot))
 ```
 
 ---
@@ -255,21 +261,39 @@ async def setup(bot): await bot.add_cog(Miner(bot))
 E = TypeVar("E", bound=Event)
 Listener = Callable[[E], Awaitable[None] | None]
 
+
 class EventBus:
-    def __init__(self, *, clock: Clock, on_error: Callable[[Event, Subscription, BaseException], None] | None = None) -> None: ...
+    def __init__(
+        self,
+        *,
+        clock: Clock,
+        on_error: Callable[[Event, Subscription, BaseException], None] | None = None,
+    ) -> None: ...
 
     # registration
-    def subscribe(self, event: type[E], listener: Listener[E], *, priority: int = 0,
-                  once: bool = False, owner: object | None = None) -> Subscription: ...
+    def subscribe(
+        self,
+        event: type[E],
+        listener: Listener[E],
+        *,
+        priority: int = 0,
+        once: bool = False,
+        owner: object | None = None,
+    ) -> Subscription: ...
     def unsubscribe(self, sub: Subscription) -> None: ...
-    def unsubscribe_owner(self, owner: object) -> int: ...          # cogs / extensions use this
+    def unsubscribe_owner(self, owner: object) -> int: ...  # cogs / extensions use this
 
     # emission (sync, never blocks, never raises into the caller)
     def dispatch(self, event: Event) -> None: ...
 
     # awaiting
-    async def wait_for(self, event: type[E], *, check: Callable[[E], bool] | None = None,
-                       timeout: float | None = None) -> E: ...         # raises asyncio.TimeoutError
+    async def wait_for(
+        self,
+        event: type[E],
+        *,
+        check: Callable[[E], bool] | None = None,
+        timeout: float | None = None,
+    ) -> E: ...  # raises asyncio.TimeoutError
     async def wait_for_any(self, *events: type[Event], check=None, timeout=None) -> Event: ...
     def expect(self, event: type[E], *, check=None, timeout=None) -> Expectation[E]: ...
     def stream(self, event: type[E], *, maxsize: int = 256) -> AsyncIterator[E]: ...
@@ -288,7 +312,7 @@ class EventBus:
 ```python
 async with bot.expect(RespawnEvent, timeout=5) as ev:
     await bot.respawn()
-spawned = await ev            # cannot miss, even if it fired during respawn()
+spawned = await ev  # cannot miss, even if it fired during respawn()
 ```
 
 **Backpressure.** `stream()` uses a bounded queue. Overflow drops the oldest item and increments a counter exposed via `bot.metrics`. It never blocks `dispatch`.
@@ -301,8 +325,10 @@ spawned = await ev            # cannot miss, even if it fired during respawn()
 class CogMeta(type):  # collects @Cog.listener, @command, @loop members into __cog_*__ tables
     ...
 
+
 class Cog(metaclass=CogMeta):
     qualified_name: str
+
     def get_commands(self) -> list[Command]: ...
     def get_listeners(self) -> list[tuple[str, Callable]]: ...
     # lifecycle hooks
@@ -337,27 +363,52 @@ class Bot(pyflayer.Bot):
 #### Commands
 
 ```python
-def command(name: str | None = None, *, aliases: Sequence[str] = (), brief: str | None = None,
-            description: str | None = None, hidden: bool = False, enabled: bool = True,
-            cls: type[Command] = Command, **attrs) -> Callable[[CommandCallback], Command]: ...
+def command(
+    name: str | None = None,
+    *,
+    aliases: Sequence[str] = (),
+    brief: str | None = None,
+    description: str | None = None,
+    hidden: bool = False,
+    enabled: bool = True,
+    cls: type[Command] = Command,
+    **attrs,
+) -> Callable[[CommandCallback], Command]: ...
 def group(name=None, *, invoke_without_command: bool = False, **attrs) -> ...: ...
 
+
 class Command(Generic[CogT, P, T]):
-    name: str; aliases: tuple[str, ...]; cog: CogT | None; params: OrderedDict[str, Parameter]
-    checks: list[Check]; cooldown: CooldownMapping | None
+    name: str
+    aliases: tuple[str, ...]
+    cog: CogT | None
+    params: OrderedDict[str, Parameter]
+    checks: list[Check]
+    cooldown: CooldownMapping | None
+
     async def invoke(self, ctx: Context) -> None: ...
     async def can_run(self, ctx: Context) -> bool: ...
-    async def prepare(self, ctx: Context) -> None: ...   # parse+convert args, run checks
+    async def prepare(self, ctx: Context) -> None: ...  # parse+convert args, run checks
     def error(self, coro): ...
     def before_invoke(self, coro): ...
     def after_invoke(self, coro): ...
 
+
 class Context:
-    bot: Bot; message: ChatMessage; author: Player | None; sender_name: str
-    prefix: str; invoked_with: str; command: Command | None
-    args: list[Any]; kwargs: dict[str, Any]; view: StringView
+    bot: Bot
+    message: ChatMessage
+    author: Player | None
+    sender_name: str
+    prefix: str
+    invoked_with: str
+    command: Command | None
+    args: list[Any]
+    kwargs: dict[str, Any]
+    view: StringView
     is_whisper: bool
-    async def reply(self, content: str, *, whisper: bool | None = None) -> None: ...   # via ChatQueue
+
+    async def reply(
+        self, content: str, *, whisper: bool | None = None
+    ) -> None: ...  # via ChatQueue
     async def send(self, content: str) -> None: ...
 ```
 
@@ -368,6 +419,7 @@ class Context:
 ```python
 class Converter(Protocol[T_co]):
     async def convert(self, ctx: Context, argument: str) -> T_co: ...
+
 
 # built-ins: str,int,float,bool, Vec3, BlockPos (consumes 3 tokens), Player, Entity,
 # Block, Item, Dimension, GameMode, Literal[...], Optional[T], Union[...], Greedy[T],
@@ -429,22 +481,33 @@ class Loop(Generic[LF]):                      # descriptor; binds per Cog instan
 class PalettedContainer:
     # kind: SINGLE | INDIRECT | DIRECT
     bits_per_entry: int
-    palette: tuple[int, ...] | None          # None for DIRECT / SINGLE has 1 entry
-    indices: np.ndarray | None               # uint8 (palette ≤ 256) or uint16; None if SINGLE
-    def get(self, idx: int) -> int: ...      # resolved global id (block state / biome id)
-    def with_set(self, idx: int, value: int) -> "PalettedContainer": ...   # COW, returns new
+    palette: tuple[int, ...] | None  # None for DIRECT / SINGLE has 1 entry
+    indices: np.ndarray | None  # uint8 (palette ≤ 256) or uint16; None if SINGLE
+
+    def get(self, idx: int) -> int: ...  # resolved global id (block state / biome id)
+    def with_set(self, idx: int, value: int) -> "PalettedContainer": ...  # COW, returns new
     def with_sets(self, items: Iterable[tuple[int, int]]) -> "PalettedContainer": ...  # batch
     @classmethod
-    def decode(cls, r: PacketReader, *, kind: ContainerKind, features: Features, registry_bits: int) -> Self: ...
+    def decode(
+        cls, r: PacketReader, *, kind: ContainerKind, features: Features, registry_bits: int
+    ) -> Self: ...
+
 
 @dataclass(frozen=True, slots=True)
 class ChunkSection:
-    blocks: PalettedContainer; biomes: PalettedContainer; non_air: int
+    blocks: PalettedContainer
+    biomes: PalettedContainer
+    non_air: int
+
 
 class ChunkColumn:
-    pos: ChunkPos; min_y: int; sections: list[ChunkSection]      # replaced, never mutated in place
-    block_entities: dict[BlockPos, BlockEntity]; heightmaps: Mapping[str, np.ndarray]
-    version: int                                                  # bumped on any mutation
+    pos: ChunkPos
+    min_y: int
+    sections: list[ChunkSection]  # replaced, never mutated in place
+    block_entities: dict[BlockPos, BlockEntity]
+    heightmaps: Mapping[str, np.ndarray]
+    version: int  # bumped on any mutation
+
     def block_state_id(self, x: int, y: int, z: int) -> int: ...
     def with_block(self, x, y, z, state_id) -> "ChunkColumn": ...  # in-place column, new section
 ```
@@ -508,20 +571,39 @@ Rules:
 
 ```python
 class Resource(enum.Flag):
-    MOVEMENT = auto(); LOOK = auto(); HANDS = auto(); WINDOW = auto(); CHAT = auto()
+    MOVEMENT = auto()
+    LOOK = auto()
+    HANDS = auto()
+    WINDOW = auto()
+    CHAT = auto()
+
 
 class Priority(enum.IntEnum):
-    IDLE = 0; BACKGROUND = 10; WORK = 20; USER = 30; COMBAT = 60; SURVIVAL = 90; EMERGENCY = 100
+    IDLE = 0
+    BACKGROUND = 10
+    WORK = 20
+    USER = 30
+    COMBAT = 60
+    SURVIVAL = 90
+    EMERGENCY = 100
 
-class OnPreempt(enum.Enum): ABORT = "abort"; RESUME = "resume"; REQUEUE = "requeue"
+
+class OnPreempt(enum.Enum):
+    ABORT = "abort"
+    RESUME = "resume"
+    REQUEUE = "requeue"
+
 
 class Action(Generic[R]):
     resources: ClassVar[Resource]
     name: ClassVar[str]
     on_preempt: ClassVar[OnPreempt] = OnPreempt.ABORT
-    async def run(self, lease: Lease) -> R: ...                 # the work
-    async def on_preempted(self, lease: Lease, by: ActionHandle) -> None: ...  # fast cleanup, <1 tick of work
-    async def checkpoint(self) -> object | None: ...            # for RESUME
+
+    async def run(self, lease: Lease) -> R: ...  # the work
+    async def on_preempted(
+        self, lease: Lease, by: ActionHandle
+    ) -> None: ...  # fast cleanup, <1 tick of work
+    async def checkpoint(self) -> object | None: ...  # for RESUME
 ```
 
 ```python
@@ -568,12 +650,17 @@ class Lease:                                   # capability token handed to Acti
 ```python
 @dataclass(frozen=True, slots=True)
 class McData:
-    version: VersionInfo               # protocol number, minecraftVersion, majorVersion
-    features: Features                 # features.json → .supports("name") -> bool
-    blocks: BlockRegistry; items: ItemRegistry; entities: EntityRegistry
-    biomes: BiomeRegistry; effects: EffectRegistry; foods: FoodRegistry
-    shapes: ShapeTable                 # tuple[AABB,...] indexed by block-state id
-    protocol: ProtocolSchema           # raw protodef per (state, direction)
+    version: VersionInfo  # protocol number, minecraftVersion, majorVersion
+    features: Features  # features.json → .supports("name") -> bool
+    blocks: BlockRegistry
+    items: ItemRegistry
+    entities: EntityRegistry
+    biomes: BiomeRegistry
+    effects: EffectRegistry
+    foods: FoodRegistry
+    shapes: ShapeTable  # tuple[AABB,...] indexed by block-state id
+    protocol: ProtocolSchema  # raw protodef per (state, direction)
+
     @classmethod
     def load(cls, version: str | int, *, edition: Literal["pc"] = "pc") -> McData: ...
 ```

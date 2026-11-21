@@ -24,15 +24,15 @@ from pyflayer.ext.commands.errors import (
 __all__ = [
     "BucketType",
     "Check",
+    "Cooldown",
+    "CooldownMapping",
     "check",
     "check_any",
-    "is_owner",
-    "in_dimension",
-    "has_player_nearby",
     "cooldown",
+    "has_player_nearby",
+    "in_dimension",
+    "is_owner",
     "max_concurrency",
-    "CooldownMapping",
-    "Cooldown",
 ]
 
 
@@ -54,7 +54,7 @@ def check(predicate: Check) -> Callable[[Callable[..., Any]], Callable[..., Any]
         checks = getattr(func, "__commands_checks__", None)
         if checks is None:
             checks = []
-            setattr(func, "__commands_checks__", checks)
+            func.__commands_checks__ = checks
         checks.append(predicate)
         return func
 
@@ -129,7 +129,7 @@ class _Bucket:
 class Cooldown:
     """A token-bucket cooldown definition."""
 
-    __slots__ = ("rate", "per")
+    __slots__ = ("per", "rate")
 
     def __init__(self, rate: int, per: float) -> None:
         self.rate = max(1, rate)
@@ -142,18 +142,20 @@ class Cooldown:
 class CooldownMapping:
     """Per-bucket cooldown state, using an injected clock."""
 
-    __slots__ = ("cooldown", "type", "_buckets", "_clock")
+    __slots__ = ("_buckets", "_clock", "cooldown", "type")
 
-    def __init__(self, cooldown: Cooldown, type: BucketType = BucketType.default,
-                 clock: Any = None) -> None:
+    def __init__(
+        self, cooldown: Cooldown, type: BucketType = BucketType.default, clock: Any = None
+    ) -> None:
         self.cooldown = cooldown
         self.type = type
         self._buckets: dict[str, _Bucket] = {}
         self._clock = clock
 
     @classmethod
-    def from_cooldown(cls, rate: int, per: float, type: BucketType = BucketType.default,
-                      clock: Any = None) -> CooldownMapping:
+    def from_cooldown(
+        cls, rate: int, per: float, type: BucketType = BucketType.default, clock: Any = None
+    ) -> CooldownMapping:
         return cls(Cooldown(rate, per), type, clock)
 
     def _key(self, ctx: Any) -> str:
@@ -183,27 +185,34 @@ class CooldownMapping:
         self._buckets.clear()
 
 
-def cooldown(rate: int, per: float, type: BucketType = BucketType.default,
-             ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def cooldown(
+    rate: int,
+    per: float,
+    type: BucketType = BucketType.default,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Apply a cooldown to a command."""
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         mapping = CooldownMapping.from_cooldown(rate, per, type)
-        setattr(func, "__commands_cooldown__", mapping)
+        func.__commands_cooldown__ = mapping
         return func
 
     return decorator
 
 
-def max_concurrency(number: int, per: BucketType = BucketType.default, *, wait: bool = False,
-                    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def max_concurrency(
+    number: int,
+    per: BucketType = BucketType.default,
+    *,
+    wait: bool = False,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Limit how many invocations of a command may run at once."""
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        setattr(func, "__commands_max_concurrency__", (number, per, wait))
+        func.__commands_max_concurrency__ = number, per, wait
         return func
 
     return decorator
 
 
-__all__ += ["NotOwner", "CommandOnCooldown", "MaxConcurrencyReached", "CheckFailure"]
+__all__ += ["CheckFailure", "CommandOnCooldown", "MaxConcurrencyReached", "NotOwner"]

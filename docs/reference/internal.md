@@ -76,17 +76,20 @@ engine = PhysicsEngine()
 state = PlayerState(Vec3(0.0, 64.0, 0.0), on_ground=True)
 tasks = []
 
+
 async def tick(n):
     global state
     state = engine.step(state, ControlState(forward=1.0), world)
     tasks.append((n, state.position.copy()))
     clock.advance(1.0 / 20.0)  # 20 TPS
 
+
 async def main():
     await asyncio.sleep(0)  # ensure loop runs
     for i in range(20):
         await tick(i)
     print(f"Position after 1s: {state.position}")
+
 
 asyncio.run(main())
 ```

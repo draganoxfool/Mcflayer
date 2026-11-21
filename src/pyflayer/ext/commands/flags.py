@@ -17,29 +17,35 @@ from __future__ import annotations
 
 import inspect
 import typing
-from typing import Any
+from typing import Any, ClassVar
 
 from pyflayer.ext.commands.converters import resolve_converter
 from pyflayer.ext.commands.errors import BadArgument
 from pyflayer.ext.commands.view import tokenize
 
-__all__ = ["flag", "Flag", "FlagConverter", "parse_flags"]
+__all__ = ["Flag", "FlagConverter", "flag", "parse_flags"]
 
 
 class Flag:
     """A single flag declaration."""
 
-    __slots__ = ("default", "converter", "description")
+    __slots__ = ("converter", "default", "description")
 
-    def __init__(self, *, default: Any = inspect.Parameter.empty, converter: Any = None,
-                 description: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        default: Any = inspect.Parameter.empty,
+        converter: Any = None,
+        description: str | None = None,
+    ) -> None:
         self.default = default
         self.converter = converter
         self.description = description
 
 
-def flag(*, default: Any = inspect.Parameter.empty, converter: Any = None,
-         description: str | None = None) -> Flag:
+def flag(
+    *, default: Any = inspect.Parameter.empty, converter: Any = None, description: str | None = None
+) -> Flag:
     """Declare a flag on a :class:`FlagConverter` subclass."""
     return Flag(default=default, converter=converter, description=description)
 
@@ -64,7 +70,7 @@ class _FlagMeta(type):
 class FlagConverter(metaclass=_FlagMeta):
     """Base class for a set of ``--name value`` flags."""
 
-    __command_flags__: dict[str, Flag] = {}
+    __command_flags__: ClassVar[dict[str, Flag]] = {}
 
     def __init__(self) -> None:
         for name in type(self).__command_flags__:
@@ -73,7 +79,7 @@ class FlagConverter(metaclass=_FlagMeta):
     async def convert(self, ctx: Any, argument: str) -> FlagConverter:
         try:
             hints: dict[str, Any] = typing.get_type_hints(type(self))
-        except Exception:  # noqa: BLE001 - fall back to raw annotations
+        except Exception:
             hints = dict(getattr(type(self), "__annotations__", {}))
         tokens = tokenize(argument)
         values: dict[str, Any] = {}
@@ -117,7 +123,9 @@ class FlagConverter(metaclass=_FlagMeta):
         return self
 
     def __repr__(self) -> str:
-        parts = ", ".join(f"{name}={getattr(self, name)!r}" for name in type(self).__command_flags__)
+        parts = ", ".join(
+            f"{name}={getattr(self, name)!r}" for name in type(self).__command_flags__
+        )
         return f"{type(self).__name__}({parts})"
 
 

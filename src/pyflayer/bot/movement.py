@@ -30,13 +30,13 @@ class MovementTracker:
     """Decide which movement packet to send for the current tick."""
 
     __slots__ = (
+        "last_on_ground",
+        "last_pitch",
         "last_position",
         "last_yaw",
-        "last_pitch",
-        "last_on_ground",
-        "ticks_since_send",
         "reminder_ticks",
         "threshold_sq",
+        "ticks_since_send",
     )
 
     def __init__(

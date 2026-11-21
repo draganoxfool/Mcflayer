@@ -168,9 +168,7 @@ class FakeServer:
         self.usernames.append(username)
         if self.reject_login is not None:
             await conn.write_payload(
-                self.encode(
-                    "login", "toClient", "disconnect", {"reason": self.reject_login}
-                )
+                self.encode("login", "toClient", "disconnect", {"reason": self.reject_login})
             )
             return
 
@@ -190,12 +188,8 @@ class FakeServer:
                 )
             )
             response = self.decode("login", "toServer", await conn.read_payload())
-            secret = private_key.decrypt(
-                bytes(response.fields["sharedSecret"]), padding.PKCS1v15()
-            )
-            token = private_key.decrypt(
-                bytes(response.fields["verifyToken"]), padding.PKCS1v15()
-            )
+            secret = private_key.decrypt(bytes(response.fields["sharedSecret"]), padding.PKCS1v15())
+            token = private_key.decrypt(bytes(response.fields["verifyToken"]), padding.PKCS1v15())
             if token != verify_token:
                 raise ConnectionClosed("verify token mismatch")
             conn.enable_encryption(secret)
@@ -230,9 +224,7 @@ class FakeServer:
 
         if self.kick_after_join:
             await conn.write_payload(
-                self.encode(
-                    "play", "toClient", "kick_disconnect", {"reason": self.kick_reason}
-                )
+                self.encode("play", "toClient", "kick_disconnect", {"reason": self.kick_reason})
             )
             return
 
@@ -260,9 +252,10 @@ class FakeServer:
                 )
             elif packet.name == "settings":
                 self.settings = dict(packet.fields)
-            elif packet.name == "client_command" and packet.fields.get(
-                "payload"
-            ) == "perform_respawn":
+            elif (
+                packet.name == "client_command"
+                and packet.fields.get("payload") == "perform_respawn"
+            ):
                 await conn.write_payload(
                     self.encode(
                         "play",
@@ -271,6 +264,4 @@ class FakeServer:
                         {"dimension": 0, "difficulty": 0, "gamemode": 1, "levelType": "flat"},
                     )
                 )
-                await conn.write_payload(
-                    self.encode("play", "toClient", "position", SPAWN_FIELDS)
-                )
+                await conn.write_payload(self.encode("play", "toClient", "position", SPAWN_FIELDS))

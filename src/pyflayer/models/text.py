@@ -110,7 +110,11 @@ class ChatComponent:
         if self.translate is not None:
             template = (translate or {}).get(self.translate, self.translate)
             try:
-                parts.append(template.format(*(arg.plain_text(translate=translate) for arg in self.with_args)))
+                parts.append(
+                    template.format(
+                        *(arg.plain_text(translate=translate) for arg in self.with_args)
+                    )
+                )
             except (IndexError, KeyError, ValueError):
                 parts.append(template)
         parts.append(self.text)
@@ -145,7 +149,9 @@ def chat_component_from_json(data: str | bytes) -> ChatComponent:
     try:
         return ChatComponent.parse(json.loads(data))
     except (json.JSONDecodeError, UnicodeDecodeError):
-        return ChatComponent(text=bytes(data).decode("utf-8", "replace") if isinstance(data, bytes) else data)
+        return ChatComponent(
+            text=bytes(data).decode("utf-8", "replace") if isinstance(data, bytes) else data
+        )
 
 
 def plain_text_from_json(data: str | bytes) -> str:

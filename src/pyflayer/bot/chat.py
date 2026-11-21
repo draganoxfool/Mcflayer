@@ -8,7 +8,9 @@ Outbound chat uses a token bucket (default one message per 1.1 s, burst 3) and s
 the 256-character protocol limit, which avoids the most common "spam" kicks.
 
 Examples:
-    >>> parse_chat_json('{"translate":"chat.type.text","with":[{"text":"Steve"},{"text":"hi"}]}', 0).sender
+    >>> parse_chat_json(
+    ...     '{"translate":"chat.type.text","with":[{"text":"Steve"},{"text":"hi"}]}', 0
+    ... ).sender
     'Steve'
 """
 
@@ -22,7 +24,7 @@ from pyflayer._internal.clock import Clock
 from pyflayer.models.chat import CHAT_POSITIONS, ChatMessage
 from pyflayer.models.text import ChatComponent
 
-__all__ = ["parse_chat_json", "ChatQueue", "TRANSLATIONS", "MAX_CHAT_CHARS"]
+__all__ = ["MAX_CHAT_CHARS", "TRANSLATIONS", "ChatQueue", "parse_chat_json"]
 
 MAX_CHAT_CHARS = 256
 
@@ -43,8 +45,14 @@ TRANSLATIONS = {
 _WHISPER_KEYS = frozenset(
     {"commands.message.display.incoming", "commands.message.display.outgoing"}
 )
-_MESSAGE_KEYS = frozenset({"chat.type.text", "chat.type.emote", "commands.message.display.incoming",
-                           "commands.message.display.outgoing"})
+_MESSAGE_KEYS = frozenset(
+    {
+        "chat.type.text",
+        "chat.type.emote",
+        "commands.message.display.incoming",
+        "commands.message.display.outgoing",
+    }
+)
 
 
 def parse_chat_json(raw: str | bytes, position: int = 0) -> ChatMessage:
@@ -53,10 +61,7 @@ def parse_chat_json(raw: str | bytes, position: int = 0) -> ChatMessage:
     Malformed JSON degrades to a literal-text message instead of raising, because a single broken
     plugin line should not disconnect the bot.
     """
-    if isinstance(raw, bytes):
-        text = raw.decode("utf-8", "replace")
-    else:
-        text = raw
+    text = raw.decode("utf-8", "replace") if isinstance(raw, bytes) else raw
     data: Any = None
     try:
         data = json.loads(text)
@@ -108,7 +113,7 @@ class ChatQueue:
         burst: Messages allowed back-to-back before the limit applies.
     """
 
-    __slots__ = ("_send", "_clock", "_per", "_burst", "_tokens", "_last_refill")
+    __slots__ = ("_burst", "_clock", "_last_refill", "_per", "_send", "_tokens")
 
     def __init__(
         self,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-__all__ = ["get_logger", "configure"]
+__all__ = ["configure", "get_logger"]
 
 
 def get_logger(module: str) -> logging.Logger:

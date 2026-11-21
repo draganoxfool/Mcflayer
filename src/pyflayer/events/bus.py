@@ -24,6 +24,7 @@ import inspect
 import itertools
 import logging
 from collections.abc import AsyncIterator, Callable
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any
 
@@ -31,7 +32,7 @@ from pyflayer._internal.clock import Clock, MonotonicClock
 from pyflayer.events.base import Event
 from pyflayer.events.catalog import ErrorEvent
 
-__all__ = ["EventBus", "Subscription", "Expectation"]
+__all__ = ["EventBus", "Expectation", "Subscription"]
 
 log = logging.getLogger("pyflayer.events.bus")
 
@@ -60,8 +61,7 @@ class Subscription:
 
     def __repr__(self) -> str:
         return (
-            f"Subscription(event={self.event.__name__}, priority={self.priority}, "
-            f"once={self.once})"
+            f"Subscription(event={self.event.__name__}, priority={self.priority}, once={self.once})"
         )
 
 
@@ -81,7 +81,7 @@ class EventBus:
             dispatched as :class:`ErrorEvent` and logged if nobody listens.
     """
 
-    __slots__ = ("clock", "on_error", "_subs", "_waiters", "_tasks", "_ids", "_closed")
+    __slots__ = ("_closed", "_ids", "_subs", "_tasks", "_waiters", "clock", "on_error")
 
     def __init__(
         self,
@@ -129,10 +129,8 @@ class EventBus:
     def unsubscribe(self, subscription: Subscription) -> None:
         """Remove a subscription. Unknown subscriptions are ignored."""
         subscription.active = False
-        try:
+        with suppress(ValueError):
             self._subs.remove(subscription)
-        except ValueError:
-            pass
 
     def unsubscribe_owner(self, owner: object) -> int:
         """Remove every subscription registered by ``owner``; return the count removed."""
@@ -173,15 +171,13 @@ class EventBus:
     def _deliver(self, event: Event, subscription: Subscription) -> None:
         if not subscription.active:
             return
-        if subscription.event is not event.__class__ and not isinstance(
-            event, subscription.event
-        ):
+        if subscription.event is not event.__class__ and not isinstance(event, subscription.event):
             return
         if subscription.once:
             self.unsubscribe(subscription)
         try:
             result = subscription.listener(event)
-        except Exception as exc:  # noqa: BLE001 - isolation is the point of the bus
+        except Exception as exc:
             self._listener_error(event, subscription, exc)
             return
         if inspect.isawaitable(result):
@@ -201,20 +197,21 @@ class EventBus:
 
         task.add_done_callback(_done)
 
-    def _listener_error(
-        self, event: Event, subscription: Subscription, exc: BaseException
-    ) -> None:
+    def _listener_error(self, event: Event, subscription: Subscription, exc: BaseException) -> None:
         if self.on_error is not None:
             try:
                 self.on_error(event, subscription, exc)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 log.exception("EventBus on_error handler raised")
             return
         if isinstance(event, ErrorEvent):
             log.error("event listener failed", exc_info=exc)
             return
         log.warning(
-            "event listener %r failed for %s: %s", subscription.listener, event.__class__.__name__, exc
+            "event listener %r failed for %s: %s",
+            subscription.listener,
+            event.__class__.__name__,
+            exc,
         )
         self.dispatch(ErrorEvent(event=event, listener=subscription.listener, exception=exc))
 
@@ -231,7 +228,7 @@ class EventBus:
             if waiter.check is not None:
                 try:
                     matched = bool(waiter.check(event))
-                except Exception as exc:  # noqa: BLE001 - fail only this waiter
+                except Exception as exc:
                     waiter.future.set_exception(exc)
                     continue
                 if not matched:
@@ -241,19 +238,17 @@ class EventBus:
         self._waiters = remaining
 
     # ------------------------------------------------------------------ awaiting
-    def _register_waiter(
-        self, event: type[Event], check: Callable[[Any], bool] | None
-    ) -> _Waiter:
+    def _register_waiter(self, event: type[Event], check: Callable[[Any], bool] | None) -> _Waiter:
         """Register a waiter synchronously, before any event can be dispatched."""
         future: asyncio.Future[Any] = asyncio.get_running_loop().create_future()
         waiter = _Waiter(event=event, future=future, check=check)
         self._waiters.append(waiter)
         return waiter
 
-    async def _await_waiter(self, waiter: _Waiter, timeout: float | None) -> Any:
+    async def _await_waiter(self, waiter: _Waiter, timeout_seconds: float | None) -> Any:
         timer: asyncio.Task[None] | None = None
-        if timeout is not None:
-            deadline = self.clock.monotonic() + timeout
+        if timeout_seconds is not None:
+            deadline = self.clock.monotonic() + timeout_seconds
             timer = asyncio.ensure_future(self._expire(waiter.future, deadline, waiter.event))
         try:
             return await waiter.future
@@ -269,7 +264,7 @@ class EventBus:
         event: type[Event],
         *,
         check: Callable[[Any], bool] | None = None,
-        timeout: float | None = None,
+        timeout: float | None = None,  # noqa: ASYNC109 - public event-wait API
     ) -> Any:
         """Wait for the next matching ``event``.
 
@@ -287,9 +282,7 @@ class EventBus:
         except asyncio.CancelledError:
             raise
         if not future.done():
-            future.set_exception(
-                TimeoutError(f"timed out waiting for {event.__name__}")
-            )
+            future.set_exception(TimeoutError(f"timed out waiting for {event.__name__}"))
 
     def expect(
         self,
@@ -335,7 +328,7 @@ class Expectation:
     The waiter is registered on ``__aenter__`` and the result is awaited by ``await``.
     """
 
-    __slots__ = ("_bus", "_event", "_check", "_timeout", "_task", "_waiter")
+    __slots__ = ("_bus", "_check", "_event", "_task", "_timeout", "_waiter")
 
     def __init__(
         self,
@@ -355,9 +348,7 @@ class Expectation:
     async def __aenter__(self) -> Expectation:
         # Registration is synchronous so an event dispatched immediately afterwards is caught.
         self._waiter = self._bus._register_waiter(self._event, self._check)
-        self._task = asyncio.ensure_future(
-            self._bus._await_waiter(self._waiter, self._timeout)
-        )
+        self._task = asyncio.ensure_future(self._bus._await_waiter(self._waiter, self._timeout))
         return self
 
     async def __aexit__(self, exc_type: object, exc: object, tb: object) -> bool:
@@ -403,10 +394,8 @@ class _EventStream:
     def _offer(self, event: Event) -> None:
         assert self._queue is not None
         if self._queue.full():
-            try:
+            with suppress(asyncio.QueueEmpty):
                 self._queue.get_nowait()
-            except asyncio.QueueEmpty:  # pragma: no cover - defensive
-                pass
             self.dropped += 1
         self._queue.put_nowait(event)
 
@@ -418,7 +407,5 @@ class _EventStream:
 
     def __del__(self) -> None:  # pragma: no cover - defensive cleanup
         if getattr(self, "_sub", None) is not None:
-            try:
+            with suppress(Exception):
                 self._bus.unsubscribe(self._sub)
-            except Exception:  # noqa: BLE001
-                pass

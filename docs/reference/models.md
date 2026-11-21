@@ -26,7 +26,7 @@ from pyflayer.models import Vec3
 
 p = Vec3(1.5, 64.0, 2.5)
 print(p.x, p.y, p.z)  # 1.5 64.0 2.5
-print(p.floored())     # BlockPos(1, 64, 2)
+print(p.floored())  # BlockPos(1, 64, 2)
 ```
 
 | Attribute / method | Meaning |
@@ -45,9 +45,9 @@ Integer block coordinates.
 from pyflayer.models import BlockPos
 
 bp = BlockPos(0, 64, 0)
-print(bp.chunk)       # ChunkPos(0, 0)
-print(bp.local_x())   # 0
-print(bp.to_vec3())   # Vec3(0.5, 64.5, 0.5)
+print(bp.chunk)  # ChunkPos(0, 0)
+print(bp.local_x())  # 0
+print(bp.to_vec3())  # Vec3(0.5, 64.5, 0.5)
 ```
 
 `ChunkPos` and `SectionPos` are the chunk-column and 16³-section coordinates.
@@ -59,9 +59,7 @@ A normalized chat component. Prefer `parse()` over constructing nested component
 ```python
 from pyflayer.models import ChatComponent
 
-component = ChatComponent.parse(
-    {"text": "Hello ", "extra": [{"text": "world", "color": "gold"}]}
-)
+component = ChatComponent.parse({"text": "Hello ", "extra": [{"text": "world", "color": "gold"}]})
 print(component.plain_text())  # "Hello world"
 print(component.extra[0].color)  # "gold"
 ```
@@ -92,7 +90,7 @@ is empty in 1.8).
 from pyflayer.models import ItemStack
 
 stack = ItemStack(item_id=1, name="minecraft:stone", count=64)
-print(stack.empty)              # False
+print(stack.empty)  # False
 print(stack.with_count(1).count)  # 1
 ```
 
@@ -113,8 +111,8 @@ Logical dimension identifiers (`StrEnum`).
 from pyflayer.models import Dimension
 
 print(Dimension.OVERWORLD)  # "overworld"
-print(Dimension.NETHER)     # "the_nether"
-print(Dimension.END)        # "the_end"
+print(Dimension.NETHER)  # "the_nether"
+print(Dimension.END)  # "the_end"
 ```
 
 The play protocol uses numeric dimension ids; `Dimension` is the version-independent name used by

@@ -81,7 +81,7 @@ def main() -> None:
             print(
                 f"{tick:>4}  {state.position.x:>6.2f} {state.position.y:>7.3f} "
                 f"{state.position.z:>7.3f}  {state.velocity.y:>8.4f}  "
-                f"{str(state.on_ground):>6}  {medium}"
+                f"{state.on_ground!s:>6}  {medium}"
             )
 
     print("-" * 61)

@@ -17,13 +17,13 @@ if TYPE_CHECKING:
     from pyflayer.bot.bot import Bot
 
 __all__ = [
-    "swing_arm",
-    "use_item",
+    "break_block",
+    "cancel_digging",
+    "finish_digging",
     "place_block",
     "start_digging",
-    "finish_digging",
-    "cancel_digging",
-    "break_block",
+    "swing_arm",
+    "use_item",
 ]
 
 

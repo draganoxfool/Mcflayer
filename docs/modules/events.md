@@ -41,7 +41,7 @@ bus.unsubscribe_owner(cog)
 bus.dispatch(ChatEvent(message=msg))
 
 event = await bus.wait_for(ChatEvent, check=lambda e: e.message.sender == "Steve", timeout=5)
-event = await bus.expect(RespawnEvent, timeout=5)   # register first, then await
+event = await bus.expect(RespawnEvent, timeout=5)  # register first, then await
 async for event in bus.stream(ChatEvent, maxsize=256):
     ...
 await bus.aclose()

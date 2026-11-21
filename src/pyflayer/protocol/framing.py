@@ -121,7 +121,9 @@ class FrameCodec:
                 "decompressed length mismatch", declared=declared, actual=len(out)
             )
         if decompressor.unused_data:
-            raise CompressionError("trailing data after zlib stream", trailing=len(decompressor.unused_data))
+            raise CompressionError(
+                "trailing data after zlib stream", trailing=len(decompressor.unused_data)
+            )
         if not decompressor.eof:
             raise CompressionError("truncated zlib stream")
         return out

@@ -33,7 +33,7 @@ await asyncio.sleep(0)
 clock.advance(0.5)
 await task
 print(clock.monotonic())  # 0.5
-print(clock.pending)      # 0
+print(clock.pending)  # 0
 ```
 
 | Method / property | Meaning |

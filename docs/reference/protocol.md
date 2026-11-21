@@ -168,6 +168,7 @@ import asyncio
 
 from pyflayer.protocol import ProtocolClient
 
+
 async def main() -> None:
     client = ProtocolClient("play.pika-network.net", "Steve", version="1.8.9")
     await client.connect()
@@ -179,6 +180,7 @@ async def main() -> None:
                 break
     finally:
         await client.close()
+
 
 asyncio.run(main())
 ```

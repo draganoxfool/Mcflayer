@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable
 
-__all__ = ["ceil_log2", "iter_bits", "clamp", "signed", "to_bytes", "batched"]
+__all__ = ["batched", "ceil_log2", "clamp", "iter_bits", "signed", "to_bytes"]
 
 
 def ceil_log2(value: int) -> int:
