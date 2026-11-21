@@ -25,10 +25,11 @@ drops everything that has no meaning in Minecraft:
 - **Kept:** `Bot` + `Cog`, `@bot.event` / `@Cog.listener()`, typed command signatures with converters,
   checks, cooldowns, generated help, `tasks.loop`, `setup()`/`teardown()` extensions with atomic hot
   reload. OOP throughout — state lives on objects, not in module globals.
-- **Dropped:** `command_prefix` (commands are only parsed when a message is addressed to the bot by
-  whisper or name mention, or dispatched programmatically), slash commands and interactions, views and
-  modals, webhooks, threads, permissions/roles/guilds, `Intents`, the `Client`/`Bot` split, and feature
-  parity as a goal. Passing `command_prefix=` raises a clear `TypeError` instead of being ignored.
+- **Dropped:** the discord.py spelling `command_prefix` (prefixes are opt-in via `prefix=`, and
+  messages are also parsed when addressed by whisper/name mention or dispatched programmatically),
+  slash commands and interactions, views and modals, webhooks, threads, permissions/roles/guilds,
+  `Intents`, the `Client`/`Bot` split, and feature parity as a goal. Passing `command_prefix=` raises a
+  clear `TypeError` instead of being ignored.
 - **Compatibility is social, not binary:** discord.py code reads naturally, but
   `import pyflayer.ext as commands` is not a drop-in replacement. See
   [Architecture](ARCHITECTURE.md#design-stance-discordpy-inspired-not-a-port).

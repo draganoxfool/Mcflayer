@@ -41,7 +41,7 @@ async def follow(ctx, player: Player):
 | 🔌 **Transport & Auth** | Login, encryption, and a clean event system |
 | 🌍 **World Awareness** | Chunks, blocks, entities, inventory |
 | 🏃 **Deterministic Physics** | Drift-compensated **20 TPS** loop, vanilla movement-packet cadence, sprint/sneak `entity_action`, teleport confirmation |
-| 🎮 **Command Layer** | No prefix needed. Cogs, converters, checks, flags, help, **atomic extension reload**, and `tasks.loop` locked to physics ticks |
+| 🎮 **Command Layer** | Optional prefixes or address-based dispatch. Cogs, converters, checks, flags, help, **atomic extension reload**, and `tasks.loop` locked to physics ticks |
 | 🧪 **Tested** | Unit, golden, and loopback tests, plus live verification on PikaNetwork |
 
 ---

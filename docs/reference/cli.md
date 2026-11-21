@@ -31,8 +31,9 @@ pyflayer-connect play.pika-network.net -u Steve --timeout 15 --chat "/register p
 | `--verbose`, `-v` | Debug logging | off |
 
 `--timeout` is **not** a join timeout: it is how long the process stays connected after Join Game.
-A leading `/` in `--chat` sends a command (`bot.send_command()`); otherwise the text is sent as
-public chat through `bot.chat()`, which strips leading slashes as a safety measure.
+A leading `/` in `--chat` sends a command through `bot.send_command()`; otherwise the text is sent
+as public chat through `bot.chat()`. `Bot.chat()` itself preserves a leading `/` as a command, so
+callers that accept untrusted text should choose the method deliberately.
 
 ## `python -m pyflayer.cli`
 

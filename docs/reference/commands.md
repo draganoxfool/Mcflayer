@@ -7,14 +7,16 @@ The discord.py-inspired command layer. This page documents the public classes an
 from pyflayer.ext import commands
 ```
 
-!!! note "No prefix"
-    `commands.Bot(command_prefix=...)` raises `CommandPrefixError` (a `TypeError`). Commands are
-    dispatched only when a message is addressed to the bot or via `bot.dispatch_command()`.
+!!! note "Optional prefix; `command_prefix` is rejected"
+    Use `prefix="!"` (or a collection of prefixes) for prefix commands. A message is also a
+    command when it is addressed to the bot, matches `trigger=`, or is passed to
+    `bot.dispatch_command()`. The discord.py spelling `command_prefix=` raises
+    `CommandPrefixError` (a `TypeError`); it is not silently accepted.
 
 ## `commands.Bot`
 
 ```python
-commands.Bot(username=None, *, trigger=None, case_insensitive=True,
+commands.Bot(username=None, *, prefix=None, trigger=None, case_insensitive=True,
              owner_ids=(), help_command=True, **bot_kwargs)
 ```
 
@@ -132,7 +134,7 @@ The full tree lives in `pyflayer.ext.commands.errors` and derives from
 | Error | Meaning |
 |---|---|
 | `CommandError` | Base for every command error |
-| `CommandPrefixError` | `command_prefix=` was passed (also `TypeError`) |
+| `CommandPrefixError` | `command_prefix=` was passed (also `TypeError`); use `prefix=` |
 | `CommandNotFound` | No command matched |
 | `UserInputError` | Bad input base |
 | `MissingRequiredArgument` | A required parameter was missing |

@@ -1,0 +1,337 @@
+# mcflayer
+
+> `mcflayer` is an asyncio Minecraft Java Edition bot library for Python 3.11+. It combines a
+> Mineflayer-style protocol/world/physics stack with a discord.py-style command layer. The PyPI
+> distribution is `mcflayer`; the import package is `pyflayer`. Reference target: Minecraft 1.8.9
+> (protocol 47). Only 1.8 data is vendored in 0.8.0.
+
+## What it is
+
+- A single-bot, asyncio-only library: `Bot` owns login, the event bus, world/entity/inventory state,
+  a 20 TPS physics loop, and chat.
+- Implemented: 1.8.9 protocol/login, offline and Microsoft auth, encryption/compression, server-list
+  ping, chunks/blocks/entities/inventory, deterministic physics, events, commands/cogs/extensions,
+  and `tasks.loop`.
+- Not implemented in 0.8.0: action scheduler (priority/preemption), A* pathfinding, swarm/shared
+  world, digging, block placement, attacking, crafting, and container interaction. Their packages
+  are empty placeholders; do not invent APIs for them.
+- Commands accept an optional prefix (`commands.Bot(prefix="!")`) and also dispatch when addressed:
+  a public chat command may mention the bot name, or the message may be a whisper. The discord.py
+  spelling `command_prefix=` raises `CommandPrefixError`; use `prefix=`.
+
+## Install
+
+```bash
+pip install mcflayer
+# development
+pip install -e ".[dev]"
+```
+
+- Python `>=3.11`.
+- Runtime dependencies: `numpy>=1.26`, `msgspec>=0.18`, `cryptography>=42`, `httpx>=0.27`,
+  `dnspython>=2.6`.
+- CLI entry points: `pyflayer-connect` and `pyflayer-status`.
+- Supported out of the box: Minecraft 1.8, 1.8.8, 1.8.9 (protocol 47, one vendored data set).
+  1.9+ require data files that are not shipped in 0.8.0.
+
+## Minimal working example
+
+```python
+import asyncio
+
+from pyflayer import Bot
+from pyflayer.events import ChatEvent, SpawnEvent
+
+async def main() -> None:
+    bot = Bot("Steve", host="play.pika-network.net", version="1.8.9")
+
+    @bot.event
+    async def on_spawn(event: SpawnEvent) -> None:
+        print("spawned", event.position)
+
+    @bot.event
+    async def on_chat(event: ChatEvent) -> None:
+        if event.message.content == "ping":
+            await bot.chat("pong")
+
+    await bot.connect()
+    try:
+        await bot.run()
+    finally:
+        await bot.close()
+
+asyncio.run(main())
+```
+
+`connect()` returns after Join Game. The spawn position and most world packets arrive later while
+`run()` is reading. Use `expect(SpawnEvent)` or wait for `SpawnEvent` before relying on
+`bot.position`.
+
+## Core concepts
+
+- `Bot`: connection lifecycle, state, chat, movement controls and events. Use as an async context
+  manager or always `await bot.close()`.
+- Events: `EventBus` with typed frozen dataclasses. `@bot.event` registers `on_<event>` methods;
+  `wait_for()` awaits one event, `expect()` registers before an action so the event cannot be missed.
+- World: `bot.world` (`World`) holds chunks/blocks; `bot.entities` is an `EntityTracker`;
+  `bot.inventory` holds windows/slots. Updates come from server packets.
+- Physics: `bot.physics` and `bot.controls`; the internal `TickDriver` steps the engine at 20 TPS and
+  sends movement packets. Use `set_movement`, `look`, `jump`, and `stop_movement`; do not send
+  movement packets directly.
+- Commands: `pyflayer.ext.commands.Bot` adds cogs, converters, checks, flags, help and atomic
+  extension reload. The base `pyflayer.Bot` has no command decorators.
+- Tasks: `tasks.loop` runs on wall time (`seconds`, `minutes`, `hours`) or physics ticks (`ticks`).
+
+## API cheat sheet
+
+All async callables below are marked `async`; everything else is synchronous.
+
+```python
+import pyflayer
+pyflayer.__version__ == "0.8.0"; pyflayer.PROTOCOL_VERSION == 47
+pyflayer.REFERENCE_VERSION == "1.8.9"
+
+# Bot lifecycle and actions
+Bot(username=None, *, host="", port=25565, version="1.8.9", auth=None, clock=None,
+    use_srv=True, auto_respawn=True, reconnect=False, max_backoff=30.0, join_timeout=20.0)
+await bot.connect(*, host=None, port=None) -> JoinEvent
+await bot.wait_until_ready() -> None
+await bot.run() -> None                    # read packets until disconnect/kick
+await bot.close() -> None
+async with bot: ...                        # connect on enter, close on exit
+bot.connected; bot.state; bot.on_ground; bot.teleport_confirm_supported
+await bot.chat(message: str) -> None       # preserves leading "/" as a command; rate limited
+await bot.send_command(command: str) -> None
+await bot.respawn() -> None
+bot.set_movement(forward=0.0, strafe=0.0, *, sprint=False, sneak=False) -> None
+bot.stop_movement() -> None
+bot.look(*, yaw=None, pitch=None) -> None
+bot.jump() -> None
+bot.find_blocks(matching: str | int, *, within=32.0, count=1) -> list[BlockPos]
+await bot.wait_for(event, *, check=None, timeout=None) -> Event
+bot.expect(event, *, check=None, timeout=None) -> Expectation
+@bot.event                                 # method name must be on_<event_name>
+
+# EventBus
+EventBus(*, clock=None, on_error=None)
+bus.subscribe(event, listener, *, priority=0, once=False, owner=None) -> Subscription
+bus.unsubscribe(subscription) -> None
+bus.unsubscribe_owner(owner) -> int
+bus.dispatch(event) -> None                # synchronous; does not await listeners
+await bus.wait_for(event, *, check=None, timeout=None) -> Event
+bus.expect(event, *, check=None, timeout=None) -> Expectation
+bus.stream(event, *, maxsize=256) -> AsyncIterator[Event]
+await bus.aclose() -> None
+
+# Commands, cogs and extensions
+commands.Bot(username=None, *, prefix=None, trigger=None, case_insensitive=True, owner_ids=(),
+             help_command=True, **Bot_kwargs)   # prefix may be str or Collection[str]
+await bot.add_cog(cog, *, override=False) -> None
+await bot.remove_cog(name) -> Cog | None
+await bot.load_extension(name, *, package=None) -> None
+await bot.unload_extension(name, *, package=None) -> None
+await bot.reload_extension(name, *, package=None) -> None
+await bot.dispatch_command(text, *, author=None, is_whisper=False, message=None,
+                           prefix=None) -> None
+ctx.prefix -> str | None                  # matched prefix, else None
+bot.command(**attrs); bot.group(**attrs); bot.on_command_error(coro)
+@commands.command(name=None, *, aliases=(), brief=None, description=None, hidden=False, enabled=True)
+@commands.group(name=None, *, invoke_without_command=False, aliases=(), brief=None,
+                description=None, hidden=False)
+@commands.Cog.listener(name=None)
+@commands.check(predicate); @commands.check_any(*predicates)
+@commands.cooldown(rate, per, type=BucketType.default)
+@commands.max_concurrency(number, per=BucketType.default, *, wait=False)
+@commands.in_dimension(*dimensions); @commands.has_player_nearby(distance); @commands.is_owner()
+commands.Player; commands.Greedy[T]; commands.Range[int, 1, 64]
+@commands.flag(*, default, converter=None, description=None)
+class Options(commands.FlagConverter): ...
+await ctx.reply(content, *, whisper=None) -> None
+await ctx.send(content) -> None
+
+# tasks.loop (async function required)
+tasks.loop(*, seconds=MISSING, minutes=MISSING, hours=MISSING, ticks=None,
+           count=None, reconnect=True, name=None)
+loop.start(*args, **kwargs) -> asyncio.Task[None]   # sync
+loop.stop(); loop.cancel(); loop.restart(*args, **kwargs)
+loop.change_interval(seconds=...); loop.current_loop; loop.is_running(); loop.failed()
+
+# World, entities, inventory
+World(mc, *, min_y=0, height=256, dimension=0)
+world.block_at(BlockPos) -> BlockState
+world.block_state_id(pos) -> int
+world.block_state_id_or(pos, default) -> int
+world.set_block_state(pos, state_id, *, source=None) -> bool
+world.find_blocks(matching, *, within=32.0, around=None, count=1) -> list[BlockPos]
+world.raycast(origin, direction, max_dist, *, include_fluids=False) -> RayHit | None
+world.snapshot(bounds=None) -> WorldSnapshot
+bot.entities.all() -> tuple[Entity, ...]; bot.entities.get(entity_id) -> Entity | None
+Entity: entity_id, type_id, type_name, uuid, name, position, yaw, pitch, velocity, on_ground,
+        metadata, equipment, is_player, block_pos
+bot.inventory.held_item; bot.inventory.player; bot.inventory.window(window_id)
+Window: window_id, title, size, items; window.slot(index); window.set_slot(index, item)
+
+# Physics and auth
+ControlState(forward=0.0, strafe=0.0, jump=False, sneak=False, sprint=False, yaw=0.0, pitch=0.0)
+PlayerState(position, velocity=Vec3(0, 0, 0), yaw=0.0, pitch=0.0, on_ground=False, ...)
+PhysicsEngine(*, step_height=0.6, gravity=0.08).step(state, controls, world) -> PlayerState
+TickDriver(clock, *, tps=20, max_catch_up=2).run(callback); tick_driver.stop()
+OfflineAuth(username); MicrosoftAuth(*, client_id=..., on_device_code=None, refresh_token=None)
+StaticAuth(session, *, online_join=False); Session(username, uuid, access_token=None, xuid=None)
+await auth.login() -> Session; await auth.join(session, *, server_hash) -> None
+await pyflayer.ping(host, port=25565, *, protocol="1.8.9", use_srv=True, timeout=5.0)
+```
+
+## Event catalog
+
+| Event | Handler | Key fields |
+|---|---|---|
+| `ConnectEvent` | `on_connect` | `host`, `port`, `protocol` |
+| `LoginEvent` | `on_login` | `username`, `uuid` |
+| `JoinEvent` | `on_join` | `entity_id`, `game_mode`, `dimension`, `difficulty`, `max_players`, `level_type` |
+| `SpawnEvent` | `on_spawn` | `position`, `yaw`, `pitch` |
+| `RespawnEvent` | `on_respawn` | `dimension` |
+| `DeathEvent` | `on_death` | `health` |
+| `HealthEvent` | `on_health` | `health`, `food`, `saturation` |
+| `ChatEvent` | `on_chat` | `message: ChatMessage` |
+| `PlayerInfoEvent` | `on_player_info` | `action`, `uuid`, `name`, `ping`, `game_mode`, `display_name` |
+| `KickEvent` | `on_kick` | `reason: ChatComponent`, `reason_text` |
+| `DisconnectEvent` | `on_disconnect` | `reason`, `error` |
+| `ErrorEvent` | `on_error` | `event`, `listener`, `exception` |
+| `ChunkLoadEvent` | `on_chunk_load` | `pos`, `sections`, `non_air` |
+| `ChunkUnloadEvent` | `on_chunk_unload` | `pos` (reserved; 1.8 sends no unload) |
+| `BlockUpdateEvent` | `on_block_update` | `pos`, `state_id`, `old_state_id` |
+| `EntitySpawnEvent` | `on_entity_spawn` | `entity` |
+| `EntityMoveEvent` | `on_entity_move` | `entity`, `old_position` |
+| `EntityGoneEvent` | `on_entity_gone` | `entity` |
+| `EntityMetadataEvent` | `on_entity_metadata` | `entity_id`, `metadata` |
+| `InventoryChangedEvent` | `on_inventory_changed` | `window_id`, `slot`, `item` |
+| `DimensionChangeEvent` | `on_dimension_change` | `dimension`, `previous` |
+| `ExperienceEvent` | `on_experience` | `bar`, `level`, `total` |
+| `PhysicsTickEvent` | `on_physics_tick` | `tick`, `position`, `on_ground` |
+
+`ChatMessage` fields: `content`, `sender`, `position`, `is_whisper`, `component`, `raw`.
+
+## Common recipes
+
+Command in a cog (address a public message to `Steve`, or whisper `ping`):
+
+```python
+from pyflayer.ext import commands
+
+class Tools(commands.Cog):
+    @commands.command()
+    async def ping(self, ctx: commands.Context) -> None:
+        await ctx.reply("pong")
+
+bot = commands.Bot("Steve", host="play.pika-network.net", version="1.8.9")
+await bot.add_cog(Tools(bot))
+await bot.connect()
+try:
+    await bot.run()
+finally:
+    await bot.close()
+```
+
+`tasks.loop` inside a cog:
+
+```python
+from pyflayer.ext import commands, tasks
+
+class Heartbeat(commands.Cog):
+    @tasks.loop(seconds=10)
+    async def beat(self) -> None:
+        await self.bot.chat("tick")
+
+    async def cog_load(self) -> None:
+        self.beat.start()
+
+    async def cog_unload(self) -> None:
+        self.beat.cancel()
+```
+
+Wait for spawn without missing it:
+
+```python
+from pyflayer.events import SpawnEvent
+
+await bot.connect()
+async with bot.expect(SpawnEvent, timeout=10) as spawned:
+    run_task = asyncio.create_task(bot.run())
+    event = await spawned
+print(event.position)
+await bot.close()
+await asyncio.gather(run_task, return_exceptions=True)
+```
+
+World query and movement:
+
+```python
+from pyflayer import BlockPos, Vec3
+
+hit = bot.world.raycast(bot.position, Vec3(0, -1, 0), 16)
+if hit is not None:
+    print(hit.pos, hit.face)
+bot.set_movement(1.0, sprint=True)
+bot.look(yaw=90.0, pitch=0.0)
+await asyncio.sleep(1.0)
+bot.stop_movement()
+```
+
+Extension module `extensions/greet.py` and hot reload:
+
+```python
+from pyflayer.ext import commands
+
+class Greeter(commands.Cog):
+    @commands.command()
+    async def greet(self, ctx: commands.Context) -> None:
+        await ctx.reply(f"Hello, {ctx.sender_name}!")
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Greeter(bot))
+
+async def teardown(bot: commands.Bot) -> None:
+    await bot.remove_cog("greeter")
+
+# load / reload / unload from your main code
+await bot.load_extension("extensions.greet")
+await bot.reload_extension("extensions.greet")
+await bot.unload_extension("extensions.greet")
+```
+
+## Errors
+
+All library errors derive from `pyflayer.errors.PyFlayerError` and carry `message` and `fields`.
+
+- Connection/protocol: `ConnectionClosed`, `ProtocolError`, `MalformedPacket`, `UnknownPacket`,
+  `FramingError`, `CompressionError`, `StateError`, `UnsupportedVersion`, `UnsupportedType`.
+- Auth/login: `AuthError`, `LoginRejected`, `KickedError` (reason is in `exc.fields["reason"]`).
+- Data/world: `DataError`, `MissingRegistryEntry`, `WorldError`, `ChunkNotLoaded`,
+  `OutOfWorldBounds`.
+- Commands: `CommandError`, `CommandNotFound`, `CommandPrefixError`, `MissingRequiredArgument`,
+  `BadArgument`, `BadUnionArgument`, `ConversionError`, `CheckFailure`, `CheckAnyFailure`,
+  `CommandOnCooldown`, `MaxConcurrencyReached`, `CommandInvokeError`.
+- Extensions: `ExtensionError`, `ExtensionNotLoaded`, `ExtensionAlreadyLoaded`, `ExtensionFailed`.
+- Reserved but not currently raised by an implemented subsystem: `ActionError` and its subclasses,
+  `PathError`/`NoPath`/`PathTimeout`.
+
+## Gotchas
+
+- Everything is asyncio. Never call `time.sleep`, blocking HTTP, or `asyncio.run` inside a handler.
+- `Bot.chat()` is `async`; a leading `/` is sent as a command. Use `send_command()` for clarity;
+  `commands.Context.reply()`/`.send()` strip leading `/` so command output cannot run a command.
+- `connect()` stops at Join Game, not at spawn. `run()` is the packet loop.
+- Commands require `pyflayer.ext.commands.Bot`; `pyflayer.Bot` has no `command` decorator.
+- `tasks.loop(time=...)` is accepted for discord.py familiarity but ignored. Use `seconds` or `ticks`.
+- Microsoft auth is interactive (device code); never embed tokens in source or logs.
+- 1.8 chat is unsigned. 1.19+ secure-profile chat is not supported.
+- `actions`, `pathfinder`, and `swarm` are empty packages in 0.8.0. No `goto`, `dig`, `place_block`,
+  priority actions, or `BotCluster` API exists.
+
+## Links
+
+- Source: https://github.com/draganoxfool/Mcflayer
+- Docs: https://github.com/draganoxfool/Mcflayer/tree/main/docs
+- API reference: https://github.com/draganoxfool/Mcflayer/blob/main/docs/reference/index.md
+- PyPI: https://pypi.org/project/mcflayer/

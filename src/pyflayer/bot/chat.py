@@ -128,14 +128,16 @@ class ChatQueue:
     async def send(self, message: str, *, allow_commands: bool = False) -> None:
         """Rate-limit, split and send one logical message.
 
-        A leading ``/`` is stripped from ordinary chat so a reply cannot execute a command.
-        Callers that intentionally send a command pass ``allow_commands=True``.
+        With ``allow_commands=True`` a leading ``/`` is preserved and treated as a command;
+        commands are never split across packets. With the default (``False``) a leading ``/`` is
+        stripped so untrusted chat cannot execute a command.
         """
         if not allow_commands:
             message = message.lstrip("/")
             if not message:
                 return
-        chunks = [message] if allow_commands else split_message(message)
+        # Commands must stay in one packet; ordinary chat is split at the 256-character limit.
+        chunks = [message] if message.startswith("/") else split_message(message)
         for chunk in chunks:
             await self._acquire()
             await self._send(chunk)

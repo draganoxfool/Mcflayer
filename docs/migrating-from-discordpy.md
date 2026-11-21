@@ -25,7 +25,7 @@ gone.
 
 | Removed | Why | Replacement |
 |---|---|---|
-| `command_prefix=` | Minecraft chat has no client-side prefix; parsing every line would be fragile. Passing it raises `CommandPrefixError` (a `TypeError`). | Address the bot by whisper/name mention, or `bot.dispatch_command()` |
+| `command_prefix=` | The discord.py spelling is rejected (`CommandPrefixError`, a `TypeError`). Minecraft chat has no implicit prefix, so prefixes are opt-in. | Use `prefix="!"`, address the bot by whisper/name mention, or `bot.dispatch_command()` |
 | Slash commands / `app_commands` | No interactions in the Java chat protocol. | — |
 | Views, modals, buttons, select menus | No interaction payloads. | Commands + chat |
 | Webhooks, threads, forums | No such concepts. | — |
@@ -41,7 +41,7 @@ gone.
 discord.py:
 
 ```python
-bot = commands.Bot(command_prefix="!")
+bot = commands.Bot(prefix="!")
 @bot.command()
 async def ping(ctx):
     await ctx.send("pong")
@@ -52,23 +52,24 @@ async def ping(ctx):
 mcflayer:
 
 ```python
-bot = commands.Bot(version="1.8.9")   # no prefix
+bot = commands.Bot(version="1.8.9", prefix="!")   # prefix is optional
 @bot.command()
 async def ping(ctx):
     await ctx.reply("pong")
 
-# "Steve ping" in public chat, or a whisper "ping",
+# "!ping" or "Steve !ping" in public chat, or a whisper "!ping",
 # or: await bot.dispatch_command("ping", author="Alex", is_whisper=True)
 ```
 
-- `ctx.prefix` exists but is always `None`.
+- `ctx.prefix` is the matched prefix, or `None` when only addressing matched.
 - `ctx.author` is a sender **name** (or `None` for system lines), not a `Member`.
 - `ctx.channel`/`ctx.guild` do not exist.
 - `ctx.reply()` answers whispers privately and public chat publicly.
 
 ## Porting checklist
 
-1. Remove `command_prefix=`; choose `trigger=` only if the server rewrites chat.
+1. Replace `command_prefix=` with `prefix=` (or omit it and use address-based commands). Add
+   `trigger=` only if the server rewrites chat.
 2. Replace `ctx.send`/`reply` bodies that assumed embeds with plain text.
 3. Replace `Member`/`Role`/`Permission` checks with `is_owner`/`check`/world checks.
 4. Move `on_message` logic into an `on_chat` listener that calls `bot.dispatch_command`.

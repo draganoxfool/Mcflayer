@@ -1,8 +1,9 @@
-"""The command bot: address-based dispatch, cogs and atomic extensions.
+"""The command bot: addressing and optional prefixes, cogs and atomic extensions.
 
-There is no command prefix (ADR-11). A chat line becomes a command only when it is addressed to the
-bot — a whisper, or a public line that mentions the bot's name — or when code calls
-:meth:`dispatch_command`. Passing ``command_prefix=`` raises :class:`CommandPrefixError`.
+A chat line becomes a command when it starts with an optional configured prefix, when it is
+addressed to the bot (a whisper, a name mention, or a trigger match), or when code calls
+:meth:`dispatch_command`. Passing ``command_prefix=`` raises :class:`CommandPrefixError`; the
+supported spelling is ``prefix=``.
 """
 
 from __future__ import annotations
@@ -42,8 +43,13 @@ class Bot(_BaseBot):
 
     Args:
         username: Offline username.
-        command_prefix: Not supported. Passing it raises :class:`CommandPrefixError`.
+        prefix: Optional command prefix or prefixes (for example ``"!"``). A message that
+            starts with a prefix is a command even when it does not mention the bot. Prefixes
+            also work in whispers, trigger matches and after a name mention.
+        command_prefix: Not supported. Passing it raises :class:`CommandPrefixError`; use
+            ``prefix`` instead.
         trigger: Optional regex a public message may start with instead of a name mention.
+            A prefix may follow the matched trigger.
         case_insensitive: Lower-case command names and aliases when resolving.
         owner_ids: Sender names considered owners by :func:`~checks.is_owner`.
         help_command: Add a built-in ``help`` command (default ``True``).
@@ -53,6 +59,7 @@ class Bot(_BaseBot):
         self,
         username: str | None = None,
         *,
+        prefix: str | Collection[str] | None = None,
         command_prefix: object = _MISSING,
         trigger: str | re.Pattern[str] | None = None,
         case_insensitive: bool = True,
@@ -63,6 +70,8 @@ class Bot(_BaseBot):
         if command_prefix is not _MISSING:
             raise CommandPrefixError()
         super().__init__(username, **kwargs)
+        prefixes = (prefix,) if isinstance(prefix, str) else tuple(prefix or ())
+        self.prefixes = tuple(value for value in prefixes if value)
         self.trigger = re.compile(trigger) if isinstance(trigger, str) else trigger
         self.case_insensitive = case_insensitive
         self.owner_ids = frozenset(owner_ids)
@@ -87,21 +96,42 @@ class Bot(_BaseBot):
         addressed = self._addressed(message)
         if addressed is None:
             return
-        text, is_whisper = addressed
+        text, is_whisper, prefix = addressed
         await self.dispatch_command(
-            text, author=message.sender, is_whisper=is_whisper, message=message
+            text,
+            author=message.sender,
+            is_whisper=is_whisper,
+            message=message,
+            prefix=prefix,
         )
 
-    def _addressed(self, message: ChatMessage) -> tuple[str, bool] | None:
-        content = message.content
+    def _match_prefix(self, text: str) -> tuple[str, str] | None:
+        for prefix in self.prefixes:
+            if text.startswith(prefix):
+                return text[len(prefix):].strip(), prefix
+        return None
+
+    def _without_prefix(self, text: str) -> tuple[str, str | None]:
+        matched = self._match_prefix(text)
+        return (text, None) if matched is None else matched
+
+    def _addressed(self, message: ChatMessage) -> tuple[str, bool, str | None] | None:
+        content = message.content.strip()
         if message.is_whisper:
-            return content.strip(), True
+            text, prefix = self._without_prefix(content)
+            return text, True, prefix
         if not self.username:
             return None
+        prefixed = self._match_prefix(content)
+        if prefixed is not None:
+            text, prefix = prefixed
+            return text, False, prefix
         if self.trigger is not None:
             match = self.trigger.match(content)
             if match:
-                return content[match.end():].strip(), False
+                rest = content[match.end():].strip()
+                text, prefix = self._without_prefix(rest)
+                return text, False, prefix
         # A public line is addressed when the bot's name appears as a token. Check the
         # decorated forms first so ``@Steve help`` does not lose its ``@`` as command text.
         name = self.username
@@ -115,7 +145,8 @@ class Bot(_BaseBot):
                 if not before.isalnum() and not after.isalnum():
                     rest = (content[:index] + content[after_index:]).strip()
                     rest = rest.lstrip(":,").strip()
-                    return rest, False
+                    text, prefix = self._without_prefix(rest)
+                    return text, False, prefix
                 index = lowered.find(token, index + 1)
         return None
 
@@ -126,6 +157,7 @@ class Bot(_BaseBot):
         author: str | None = None,
         is_whisper: bool = False,
         message: ChatMessage | None = None,
+        prefix: str | None = None,
     ) -> None:
         """Dispatch ``text`` as a command, bypassing address rules.
 
@@ -171,6 +203,7 @@ class Bot(_BaseBot):
             command=command,
             view=view,
             is_whisper=is_whisper,
+            prefix=prefix,
         )
         try:
             await command.prepare(ctx)

@@ -58,6 +58,18 @@ async def test_chat_roundtrip_and_event() -> None:
         await _stop(bot, task)
 
 
+async def test_chat_preserves_explicit_command_slash() -> None:
+    async with FakeServer() as server:
+        bot = await _start_bot(server)
+        task = asyncio.create_task(bot.run())
+        await bot.chat("/register password password")
+        async with asyncio.timeout(2):
+            while not server.chats:
+                await asyncio.sleep(0.01)
+        assert server.chats == ["/register password password"]
+        await _stop(bot, task)
+
+
 async def test_keep_alive_is_answered() -> None:
     async with FakeServer() as server:
         bot = await _start_bot(server)
@@ -144,6 +156,18 @@ async def test_chat_queue_token_bucket_and_command_safety() -> None:
     command_queue = ChatQueue(send_command, clock=clock)
     await command_queue.send("/register password password", allow_commands=True)
     assert commands == ["/register password password"]
+
+    chunks: list[str] = []
+
+    async def send_chunk(message: str) -> None:
+        chunks.append(message)
+
+    long_queue = ChatQueue(send_chunk, clock=clock, per=0)
+    await long_queue.send("x" * 300, allow_commands=True)
+    assert len(chunks) == 2
+    long_command = "/" + "x" * 300
+    await long_queue.send(long_command, allow_commands=True)
+    assert chunks[-1] == long_command
 
 
 def test_parse_chat_json_plain_text() -> None:

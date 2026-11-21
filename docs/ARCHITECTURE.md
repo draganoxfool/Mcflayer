@@ -20,8 +20,8 @@ the feature. Everything else is deliberately out of scope.
 
 **What does NOT carry over (by design)**
 
-- `command_prefix`. There is no chat prefix to configure. A message is a command only when it is
-  addressed to the bot (whisper, or the bot's name mentioned), or when code calls
+- `command_prefix`. Minecraft has no implicit prefix. Prefixes are opt-in via `commands.Bot(prefix="!")`;
+  a message is also a command when addressed to the bot (whisper or name mention) or when code calls
   `bot.dispatch_command(...)`. Passing `command_prefix=` raises a clear `TypeError` (see ADR-11).
 - Slash commands, `app_commands`, interactions, views/modals/buttons, webhooks, threads.
 - Permissions, roles, guilds: Minecraft has none of these; `is_owner` plus world checks cover the need.
@@ -67,14 +67,14 @@ Two-tier rule: correctness in Python first, then an optional native accelerator 
 | ADR-8 | Time is injected (`Clock` Protocol). Nothing calls `time.monotonic()` or `asyncio.sleep` directly outside `_internal/clock.py`. This makes tick loops, tasks and cooldowns deterministically testable. |
 | ADR-9 | Every public async API is cancellation-safe. `CancelledError` is never swallowed. Cleanup lives in `finally`. |
 | ADR-10 | Errors form one tree rooted at `PyFlayerError`. No bare `Exception` is raised in library code. |
-| ADR-11 | `ext.commands` is discord.py-inspired, never a port. No `command_prefix`, no slash commands, no permission hierarchy, no feature parity. Commands are dispatched only when a chat message is addressed to the bot, or via `bot.dispatch_command()`. |
+| ADR-11 | `ext.commands` is discord.py-inspired, never a port. Prefixes are opt-in (`prefix=`), the discord.py spelling `command_prefix=` is rejected, and there are no slash commands, permission hierarchy or feature parity. Commands are dispatched by prefix, addressing, `trigger=`, or `bot.dispatch_command()`. |
 | ADR-12 | Hot paths have an optional native implementation behind a private, guarded import. Native code is an optimization, never a requirement; both paths pass the same golden tests. |
 
 ### 1.1 Layer map
 
 ```
 L8  swarm            ── BotCluster, SharedWorld wiring, coordination
-L7  ext.commands, ext.tasks        ── discord.py-inspired layer (no prefix, not a port)
+L7  ext.commands, ext.tasks        ── discord.py-inspired layer (opt-in prefix, not a port)
 L6  bot              ── composition root: Bot, handlers (packet → state)
 L5  actions, pathfinder            ── behaviours (depend on ActionHost Protocol, not Bot)
 L4  physics          ── 20-TPS simulation (reads world; no protocol)
@@ -267,7 +267,7 @@ Cycle-breaking tools, in order of preference:
 import pyflayer
 from pyflayer.ext import commands, tasks
 
-bot = commands.Bot(version="1.20.4")   # no command_prefix: messages must be addressed to the bot
+bot = commands.Bot(version="1.8.9", prefix="!")   # prefix is optional; addressing also works
 
 class Miner(commands.Cog):
     def __init__(self, bot): self.bot = bot; self.status.start()
@@ -377,28 +377,30 @@ class Bot(pyflayer.Bot):
 - Unload calls `cog_unload`, cancels cog-owned loops, unsubscribes by owner and removes commands.
 - Tests must assert that no listener, task or command leaks after N reload cycles.
 
-#### Dispatch (no prefix)
+#### Dispatch (opt-in prefix plus addressing)
 
-There is no `command_prefix` and no prefix scanning. `commands.Bot` subscribes one listener to
-`ChatEvent` and treats a message as a command only if it is addressed to the bot:
+`commands.Bot` subscribes one listener to `ChatEvent` and treats a message as a command when a
+configured prefix matches, when it is addressed to the bot, or when dispatch is programmatic:
 
 | Channel | Rule |
 |---|---|
-| Whisper | Always addressed. Parse the whole content as `name args...`. |
-| Public chat | Addressed when the content contains the bot's name as a mentioned token (`<name>` or `@name`, configurable). The mention is stripped before parsing. |
+| Prefix | `prefix="!"` or a collection; the prefix is stripped before parsing. Works in public chat, whispers, after a mention and after `trigger=`. |
+| Whisper | Always addressed. Parse the whole content as `name args...`, with an optional prefix. |
+| Public chat | Addressed when the content contains the bot's name as a mentioned token (`<name>` or `@name`, configurable). The mention and optional prefix are stripped before parsing. |
 | Programmatic | `await bot.dispatch_command("name args...", author=...)` for tests, cogs and the REPL. |
-| `trigger=` | Optional `str` or compiled `re.Pattern` for servers that rewrite chat (e.g. `"bot: "`). Off by default; no implicit prefix. |
+| `trigger=` | Optional `str` or compiled `re.Pattern` for servers that rewrite chat (e.g. `"bot: "`). Off by default. |
 
 Messages from the bot itself and from the server (`system_chat`) are ignored unless explicitly
-enabled. `CommandPrefixError` subclasses `TypeError` and is raised at construction if `command_prefix`
-is passed, so ported discord.py snippets fail loudly instead of silently doing nothing.
+enabled. `CommandPrefixError` subclasses `TypeError` and is raised at construction if the discord.py
+spelling `command_prefix` is passed, so ported snippets fail loudly instead of silently doing nothing.
 
 ```python
 class Bot(pyflayer.Bot):
-    def __init__(self, *, version: str, trigger: str | re.Pattern[str] | None = None,
+    def __init__(self, *, version: str, prefix: str | Collection[str] | None = None,
+                 trigger: str | re.Pattern[str] | None = None,
                  case_insensitive: bool = True, owner_ids: Collection[str] = (), ...) -> None: ...
     async def dispatch_command(self, text: str, *, author: Player | None = None,
-                               is_whisper: bool = False) -> None: ...
+                               is_whisper: bool = False, prefix: str | None = None) -> None: ...
     async def process_message(self, message: ChatMessage) -> None: ...   # fed by ChatEvent
 ```
 

@@ -28,6 +28,7 @@ class Context:
         kwargs: Keyword arguments after conversion.
         view: The argument view positioned after the command name.
         is_whisper: True when the invocation came from a private message.
+        prefix: The command prefix that matched, or ``None`` for address-only dispatch.
     """
 
     __slots__ = (
@@ -55,6 +56,7 @@ class Context:
         command: Command | None,
         view: StringView,
         is_whisper: bool = False,
+        prefix: str | None = None,
     ) -> None:
         self.bot = bot
         self.message = message
@@ -66,14 +68,18 @@ class Context:
         self.kwargs: dict[str, Any] = {}
         self.view = view
         self.is_whisper = is_whisper
-        self.prefix = None  # no command prefix exists; kept for API familiarity
+        self.prefix = prefix
 
     async def reply(self, content: str, *, whisper: bool | None = None) -> None:
         """Reply to the invoker.
 
         By default a whisper is answered with a whisper and public chat with public chat. Pass
-        ``whisper`` to force either channel.
+        ``whisper`` to force either channel. Leading ``/`` is stripped: command output cannot
+        become a server command.
         """
+        content = content.lstrip("/")
+        if not content:
+            return
         private = self.is_whisper if whisper is None else whisper
         if private and self.author:
             await self.bot.send_command(f"msg {self.author} {content}")
@@ -81,8 +87,10 @@ class Context:
         await self.bot.chat(content)
 
     async def send(self, content: str) -> None:
-        """Send a line to public chat (rate limited)."""
-        await self.bot.chat(content)
+        """Send a line to public chat (rate limited). Leading ``/`` is stripped."""
+        content = content.lstrip("/")
+        if content:
+            await self.bot.chat(content)
 
     def __repr__(self) -> str:
         return (

@@ -23,6 +23,7 @@ from pyflayer.ext.commands.errors import (
 from pyflayer.ext.commands.view import StringView, tokenize
 from pyflayer.models.chat import ChatMessage
 from pyflayer.models.vec3 import Vec3
+from pyflayer.testing import FakeServer
 
 
 class _UpperConverter:
@@ -60,6 +61,36 @@ def test_command_prefix_is_rejected() -> None:
     with pytest.raises(CommandPrefixError):
         commands.Bot("Steve", host="localhost", command_prefix="!")
     assert issubclass(CommandPrefixError, TypeError)
+
+
+async def test_prefix_and_addressing_dispatch() -> None:
+    bot = make_bot(prefix=("!", "."))
+    seen: list[tuple[str, str | None]] = []
+
+    @bot.command()
+    async def ping(ctx: commands.Context) -> None:
+        seen.append((ctx.sender_name, ctx.prefix))
+
+    await bot.process_message(ChatMessage(content="!ping", sender="Alex"))
+    await bot.process_message(ChatMessage(content=".ping", sender="Alex"))
+    await bot.process_message(ChatMessage(content="Steve !ping", sender="Alex"))
+    await bot.process_message(ChatMessage(content="!ping", sender="Alex", is_whisper=True))
+    assert seen == [
+        ("Alex", "!"),
+        ("Alex", "."),
+        ("Alex", "!"),
+        ("Alex", "!"),
+    ]
+
+    plain = make_bot()
+    seen.clear()
+
+    @plain.command()
+    async def ping(ctx: commands.Context) -> None:
+        seen.append((ctx.sender_name, ctx.prefix))
+
+    await plain.process_message(ChatMessage(content="!ping", sender="Alex"))
+    assert seen == []
 
 
 async def test_whisper_dispatch() -> None:
@@ -133,6 +164,25 @@ async def test_alias_and_programmatic_dispatch() -> None:
 
     await bot.dispatch_command("pong", author="Alex", is_whisper=True)
     assert called == ["pong"]
+
+
+async def test_context_reply_strips_leading_command_slash() -> None:
+    async with FakeServer() as server:
+        bot = commands.Bot("Steve", host="127.0.0.1", port=server.port, use_srv=False)
+
+        @bot.command()
+        async def unsafe(ctx: commands.Context) -> None:
+            await ctx.reply("/say pwned")
+
+        await bot.connect()
+        task = asyncio.create_task(bot.run())
+        await bot.dispatch_command("unsafe", author="Alex")
+        async with asyncio.timeout(2):
+            while not server.chats:
+                await asyncio.sleep(0.01)
+        assert server.chats == ["say pwned"]
+        await bot.close()
+        await asyncio.gather(task, return_exceptions=True)
 
 
 async def test_unknown_command_raises() -> None:

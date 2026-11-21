@@ -352,8 +352,8 @@ and the M4 live anti-cheat soak is still environment-dependent).
   `cog` (`Cog`, `CogMeta`, `listener`), `help`, and `bot` (`commands.Bot`).
 - `ext/tasks/loop.py`: `Loop` descriptor and `loop()` with wall-clock and physics-tick intervals,
   `count`, `before_loop`/`after_loop`/`error`, and cog-driven start/stop/resume.
-- `commands.Bot` dispatch is address-based only (whisper, name mention, `trigger=`, or
-  `dispatch_command`); `command_prefix=` raises `CommandPrefixError`.
+- `commands.Bot` dispatch accepts optional prefixes plus addressing (whisper, name mention,
+  `trigger=`, or `dispatch_command`); `command_prefix=` raises `CommandPrefixError`, `prefix=` works.
 - Extensions use a per-extension ledger; `load_extension` rolls back on failure and
   `reload_extension` restores the old module, cogs and commands atomically.
 - `Bot.get_player` and `Bot.player_names` cache-style accessors.

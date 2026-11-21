@@ -73,11 +73,11 @@ Global exit gate for every milestone: `ruff`, `mypy --strict` and `pyright` clea
 
 **Scope.** `ext.commands`, `ext.tasks`, cogs, extension loader with hot reload, converters, checks, flags, help, `ChatParser`, `ChatQueue`, cache-style accessors (`bot.players`, `bot.entities`, `bot.get_player`).
 
-**Design boundary.** Familiar ergonomics, not parity. No `command_prefix` (dispatch is address-based), no slash commands or interactions, no permissions/roles, no `Client`/`Bot` split. Only concepts with a Minecraft meaning are implemented; the migration guide records what was dropped and why.
+**Design boundary.** Familiar ergonomics, not parity. Prefixes are opt-in (`prefix=`) and addressing still works; the discord.py spelling `command_prefix` is rejected. No slash commands or interactions, no permissions/roles, no `Client`/`Bot` split. Only concepts with a Minecraft meaning are implemented; the migration guide records what was dropped and why.
 
 **Definition of Done**
-- The DX north-star snippet works, with commands addressed to the bot by whisper or name mention.
-- `commands.Bot(command_prefix=...)` raises `CommandPrefixError` (a `TypeError`) with a message explaining the removal. No prefixed parsing path exists in the codebase.
+- The DX north-star snippet works, with commands dispatched by optional prefix, whisper, name mention, `trigger=`, or programmatic dispatch.
+- `commands.Bot(command_prefix=...)` raises `CommandPrefixError` (a `TypeError`) with a message pointing to `prefix=`; prefix parsing is covered by tests.
 - 20 reload cycles of an extension with commands, listeners and loops leave zero leaked subscriptions, tasks or commands. A broken reload rolls back cleanly.
 - Converters, `Greedy`, `Range`, flags, checks and cooldowns behave like their discord.py counterparts, with documented differences; the deferred discord.py surface is documented rather than stubbed.
 - `tasks.loop(ticks=...)` aligns to physics ticks.

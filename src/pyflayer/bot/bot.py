@@ -401,10 +401,10 @@ class Bot:
     async def chat(self, message: str) -> None:
         """Send chat (rate limited, split at 256 characters).
 
-        A leading ``/`` is stripped so chat text cannot execute a server command; use
-        :meth:`send_command` for commands.
+        A leading ``/`` is sent as a server command. Prefer :meth:`send_command` for clarity;
+        untrusted text should be sanitized before reaching this method.
         """
-        await self._chat.send(message)
+        await self._chat.send(message, allow_commands=True)
 
     async def send_command(self, command: str) -> None:
         """Send a command, adding the leading slash when missing.

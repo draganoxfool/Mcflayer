@@ -138,9 +138,10 @@ teleport reconciliation. The live 10-minute vanilla/Paper anti-cheat soak has no
 
 ## M5 — Commands and tasks (done, 0.8.0)
 
-- [x] `ext.commands.Bot`: address-based dispatch (whisper, name mention, `trigger=`, programmatic),
-  `process_message`, `dispatch_command`.
-- [x] `CommandPrefixError` (a `TypeError`) raised for `command_prefix=`; no prefixed parsing path.
+- [x] `ext.commands.Bot`: optional prefixes plus address-based dispatch (whisper, name mention,
+  `trigger=`, programmatic), `process_message`, `dispatch_command`.
+- [x] `CommandPrefixError` (a `TypeError`) raised for `command_prefix=`; supported spelling is
+  `prefix=` (str or collection), exposed as `ctx.prefix` when matched.
 - [x] `Command`, `Group`, typed parameter parsing, positional/keyword-only/`*args`, `Greedy`, `Range`.
 - [x] Built-in converters (`str`, `int`, `float`, `bool`, `Dimension`, `GameMode`, `Player`,
   `Literal`, `Optional`, `Union`, `Annotated`).

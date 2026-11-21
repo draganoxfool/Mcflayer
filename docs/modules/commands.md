@@ -4,11 +4,11 @@ A discord.py-inspired command layer. It keeps the ergonomics that make bots plea
 decorators, cogs, typed signatures, converters, checks, cooldowns, help — and drops everything that
 has no meaning in Minecraft.
 
-!!! note "No command prefix"
-    There is no `command_prefix`. A chat line is a command only when it is **addressed to the bot**
-    (a whisper, or a public line that mentions the bot's name), or when code calls
-    `bot.dispatch_command(...)`. Passing `command_prefix=` raises `CommandPrefixError` (a
-    `TypeError`) so ported discord.py snippets fail loudly instead of doing nothing.
+!!! note "Optional prefixes, plus addressing"
+    Pass `prefix="!"` to accept `!mine stone 8` in public chat. A chat line is also a command when
+    it is **addressed to the bot** (a whisper, a name mention, or a `trigger=` match), or when code
+    calls `bot.dispatch_command(...)`. Prefixes work in all of those forms. The discord.py spelling
+    `command_prefix=` raises `CommandPrefixError` (a `TypeError`) so ported snippets fail loudly.
 
 ## Quick start
 
@@ -56,12 +56,14 @@ await bot.dispatch_command("mine stone 8", author="Alex", is_whisper=True)
 
 | Source | Addressed when | Parsed as |
 |---|---|---|
-| Whisper | Always | whole content is `name args...` |
-| Public chat | The bot's name appears as a token (`Steve`, `@Steve`, `<Steve>`) | name token stripped, rest parsed |
-| `trigger=` | A configured `str`/regex matches | matched text stripped |
+| Prefix | A configured `prefix=` starts the line | prefix stripped, rest parsed |
+| Whisper | Always | optional prefix stripped, rest parsed |
+| Public chat | The bot's name appears as a token (`Steve`, `@Steve`, `<Steve>`) | name and optional prefix stripped |
+| `trigger=` | A configured `str`/regex matches | matched text and optional prefix stripped |
 | Programmatic | `await bot.dispatch_command(text, author=...)` | whole text parsed |
 
-Messages from the bot itself and server/system lines (no `sender`) are ignored.
+`ctx.prefix` is the prefix that matched, or `None` for an address-only invocation. Messages from
+the bot itself and server/system lines (no `sender`) are ignored.
 
 ## Commands and signatures
 

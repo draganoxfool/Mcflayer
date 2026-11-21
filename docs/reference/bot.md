@@ -193,9 +193,11 @@ counter rather than wall time.
 ## Chat safety
 
 `ChatQueue` is a token bucket: it allows a burst of 3 messages, then one message per 1.1 s, and
-splits ordinary chat over 256 characters, which avoids the usual spam kicks. `bot.chat()` strips
-leading `/` characters so untrusted text cannot execute a command; use `bot.send_command()` for
-commands (commands are not split). Messages are unsigned (correct for 1.8); servers using
+splits ordinary chat over 256 characters, which avoids the usual spam kicks. `bot.chat()` preserves
+a leading `/` and sends it as a server command without splitting; ordinary chat is split. Use
+`bot.send_command()` when the input is definitely a command. `commands.Context.reply()` and
+`.send()` strip leading `/` so command output cannot become a server command. Messages are unsigned
+(correct for 1.8); servers using
 `enforce-secure-profile` on 1.19.1+ will reject them when those versions are supported.
 
 ## PikaNetwork
