@@ -111,19 +111,19 @@ async def demo_inventory_interactions(bot: Bot) -> None:
     await asyncio.sleep(2)
 
     # Find open windows and demonstrate clicking
-    for window in bot.inventory.windows:
-        print_line(f"Window opened: type={window.type}, kind={window.kind}, "
-                   f"container_slots={window.container_slots}, window_id={window.window_id}")
+    for window_id, window in bot.inventory.windows.items():
+        print_line(f"Window opened: kind={window.kind}, "
+                   f"container_slots={window.container_slots}, window_id={window_id}")
         # Example: click the first slot (index 0) with left click, action 0
         # This works for chests (27 slots), furnaces (3 slots), etc.
-        await click_slot(bot, window.window_id, 0, mode=ClickMode.LEFT, action=0)
-        print_line(f"clicked slot 0 in window {window.window_id}")
+        await click_slot(bot, window_id, 0, mode=ClickMode.LEFT)
+        print_line(f"clicked slot 0 in window {window_id}")
 
         # Example: shift-click the last available slot
         last = window.container_slots - 1
         if last >= 0:
-            await shift_click_slot(bot, window.window_id, last)
-            print_line(f"shift-clicked slot {last} in window {window.window_id}")
+            await shift_click_slot(bot, window_id, last)
+            print_line(f"shift-clicked slot {last} in window {window_id}")
 
     # Close any open window
     await close_window(bot)
