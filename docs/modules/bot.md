@@ -53,7 +53,8 @@ python -m pyflayer.cli play.pika-network.net -u Steve --timeout 15
 | `kick_disconnect` | parses the reason, `KickEvent`, raises `KickedError` from `run()` |
 | `player_info` | `players` keyed by UUID, `PlayerInfoEvent` |
 | `game_state_change` | updates game mode |
-| `map_chunk`, `map_chunk_bulk` | decodes chunks into `bot.world`; partial chunks merge into the existing column; `ChunkLoadEvent` |
+| `map_chunk`, `map_chunk_bulk` | decodes 1.8 chunk columns into `bot.world`; partial chunks merge into the existing column; `ChunkLoadEvent` |
+| `tile_entity_data` | stores block-entity NBT on an already loaded chunk |
 | `block_change`, `multi_block_change` | updates `bot.world`; `BlockUpdateEvent` |
 | entity spawn/move/look/teleport/velocity/attach | updates `bot.entities`; `EntitySpawnEvent`, `EntityMoveEvent`, `EntityGoneEvent`, `EntityMetadataEvent` |
 | `window_items`, `set_slot`, `held_item_slot`, `open_window`, `close_window` | updates `bot.inventory`; `InventoryChangedEvent` |
@@ -72,23 +73,26 @@ python -m pyflayer.cli play.pika-network.net -u Steve --timeout 15
 - `bot.world.raycast(origin, direction, max_dist)` and `World.snapshot(...)` expose read-only views.
 - `await bot.respawn()` sends `client_command(perform_respawn)`.
 - `await bot.send_command("/register pw pw")` adds the slash if absent.
-- `await bot.wait_until_ready()` resolves after Join Game.
+- `await bot.wait_until_ready()` resolves after Join Game, not after the first position packet.
 - `await bot.wait_for(...)` / `bot.expect(...)` delegate to the event bus.
-- `Bot(..., reconnect=True)` reconnects with exponential backoff (1 s → `max_backoff`); a kick stops
-  the loop and raises `KickedError`.
+- `Bot(..., reconnect=True)` makes `run()` retry connection-closed and protocol failures with
+  exponential backoff (starting at 1 second and capped by `max_backoff`). A `KickedError` is raised
+  and stops this loop; authentication errors and failures in `connect()` are not retried by
+  `run()`.
 
 See the [World module](world.md) for chunk, entity and inventory semantics.
 
 ## New API modules
 
-The action primitives were split into focused modules since M5:
+Packet-level interaction helpers live in focused modules:
 
 | Module | Key functions |
 |---|---|
 | `pyflayer.bot.windows` | Window packet operations: `select_hotbar()`, `click_slot()`, `shift_click_slot()`, `drop_slot()`, `close_window()` |
 | `pyflayer.bot.interactions` | Block/item packet primitives: `swing_arm()`, `use_item()`, `place_block()`, `start_digging()`, `finish_digging()`, `cancel_digging()`, `break_block()` |
 
-Both modules are thin delegates off `Bot`; the `Bot` methods themselves have been refactored to delegate to them.
+The bot methods delegate to these helpers. Scheduled actions are a separate layer documented in
+[Actions](actions.md).
 
 - `bot.select_hotbar(slot)` selects a hotbar slot
 - `bot.click_slot(window, slot, mode=ClickMode.LEFT, action=...)` sends a window click
@@ -99,10 +103,10 @@ Both modules are thin delegates off `Bot`; the `Bot` methods themselves have bee
 
 ## Movement and physics
 
-The bot creates one `TickDriver` when the first server position arrives. It steps the engine 20
-times per second, updates `position`/`yaw`/`pitch`, sends movement, and dispatches a
-`PhysicsTickEvent` after every tick. The loop stops on `close()`, respawn resets the pose, and no
-simulation runs while the bot is dead or its current chunk is not loaded.
+Unless a tick driver is injected, the bot creates a `TickDriver` when the first server position
+arrives. Each tick updates the simulated pose, sends movement as needed, and dispatches a
+`PhysicsTickEvent`. The loop stops on close; simulation is skipped while dead or while the current
+chunk is unloaded. Respawn resets physics state.
 
 ### Controls
 
@@ -187,7 +191,7 @@ async def on_physics_tick(event: PhysicsTickEvent) -> None:
     print(event.tick, event.position, event.on_ground)
 ```
 
-It carries `tick`, `position` and `on_ground`. M5's `tasks.loop(ticks=...)` will wait on this
+It carries `tick`, `position` and `on_ground`. `tasks.loop(ticks=...)` can wait for this event
 counter rather than wall time.
 
 ### Limitations
@@ -195,7 +199,7 @@ counter rather than wall time.
 - No status effects, attributes, flight or elytra are fed into the engine yet.
 - The bot does not model server velocity packets for its own player; reconciliations are limited to
   server positions/teleports.
-- The 10-minute vanilla/Paper anti-cheat soak is a live-server gate and has not been run here.
+- Live-server anti-cheat behavior is not established by unit tests.
 
 ## Chat safety
 

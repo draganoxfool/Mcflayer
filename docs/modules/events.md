@@ -1,7 +1,7 @@
 # Events
 
-`pyflayer.events` is a typed, priority-ordered event bus. Events dispatch on their class, so there is
-no string lookup on the hot path; handler names are derived for the `@bot.event` decorator.
+`pyflayer.events` provides frozen event records and a typed event bus. `@bot.event` resolves handler
+names such as `on_chat` to catalog event classes.
 
 ## Catalog
 
@@ -30,6 +30,13 @@ no string lookup on the hot path; handler names are derived for the `@bot.event`
 | `DisconnectEvent(reason, error)` | `on_disconnect` | Connection ended |
 | `ErrorEvent(event, listener, exception)` | `on_error` | A listener raised |
 | `PhysicsTickEvent(tick, position, on_ground)` | `on_physics_tick` | One bot physics tick completed |
+| `ActionStartedEvent(action, priority, resources)` | `on_action_started` | An action acquired its lease and started |
+| `ActionFinishedEvent(action, state, duration, error=None)` | `on_action_finished` | An action reached a terminal state |
+| `ActionPreemptedEvent(action, by=None)` | `on_action_preempted` | A higher-priority action took the lease |
+| `PathStartedEvent(goal, complete, length)` | `on_path_started` | A plan is ready and following starts |
+| `PathUpdatedEvent(position, waypoint)` | `on_path_updated` | The executor reached a waypoint |
+| `PathResetEvent(reason)` | `on_path_reset` | A path was abandoned |
+| `GoalReachedEvent(goal)` | `on_goal_reached` | The final waypoint was reached |
 
 ## Bus API
 
@@ -41,7 +48,9 @@ bus.unsubscribe_owner(cog)
 bus.dispatch(ChatEvent(message=msg))
 
 event = await bus.wait_for(ChatEvent, check=lambda e: e.message.sender == "Steve", timeout=5)
-event = await bus.expect(RespawnEvent, timeout=5)  # register first, then await
+async with bus.expect(RespawnEvent, timeout=5) as expected:
+  await perform_respawn()
+event = await expected
 async with bus.stream(ChatEvent, maxsize=256) as events:
     async for event in events:
         ...
@@ -53,18 +62,18 @@ context manager when iteration may stop early; `async for` alone does not unsubs
 
 ## Semantics
 
-- `dispatch` is synchronous and never raises into the caller. Delivery order is: listeners with
-  `priority >= 1000` (the bot's internal state hooks), then `wait_for`/`expect` waiters, then
-  ordinary listeners.
+- `dispatch` is synchronous and does not propagate listener exceptions. Delivery order is internal
+  listeners with `priority >= 1000`, waiters, then ordinary listeners.
 - Internal hooks run inline so state is updated before user code sees the event (ADR-4). Ordinary
   synchronous listeners are called inline; awaitable results are scheduled as tracked tasks, so a
   slow async handler cannot block the bus. An async internal hook is scheduled rather than awaited.
 - A listener exception becomes `ErrorEvent` (and is logged when nothing listens for errors).
-- `expect()` registers its waiter synchronously on `__aenter__`, so an event dispatched immediately
-  after entering the context cannot be missed.
+- `expect()` returns an awaitable context manager. Its waiter is registered on `__aenter__`; enter
+  the context before starting the operation that may dispatch the event. Await the context value
+  before leaving the context.
 - `stream()` uses a bounded queue: on overflow the oldest event is dropped and `dropped` increments.
   Breaking out of an `async for` does **not** close the stream automatically; call
   `stream.aclose()` or use `contextlib.aclosing()`.
-- `aclose()` cancels tracked listener tasks and clears subscriptions. It also marks the bus closed;
-  close streams explicitly if you created any.
+- `aclose()` cancels tracked listener tasks, clears subscriptions and waiters, and marks the bus
+  closed. Close streams explicitly if they were created outside a context manager.
 - Timeouts use the injected `Clock`, so they are deterministic under `FakeClock`.

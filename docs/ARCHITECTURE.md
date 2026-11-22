@@ -3,6 +3,13 @@
 Source of truth for module boundaries, contracts and data flow. If the roadmap or a prompt
 conflicts with this document, this document wins.
 
+This page describes architectural intent, not proof that every listed contract has shipped. The
+current 1.8.9 implementation includes the M6 scheduler, A* planner/executor and built-in actions,
+but its live and performance acceptance gates remain open. `SurvivalMonitor` currently submits
+`Eat` on low-health events; other environmental responses in the design below are planned. M7
+creates one or more tick groups, not a single cluster-wide driver. See [Tasks](tasks.md) for verified
+implementation and validation status.
+
 ## Design stance: discord.py-inspired, not a port
 
 mcflayer borrows discord.py's *shape*, not its surface: decorators for handlers, cogs that group
@@ -88,6 +95,12 @@ Allowed imports: a module may import only from its own layer (same package) or l
 Exceptions: `world` may import `data` for registries, and `physics` may import `world` read-only views.
 
 ### 1.2 Package layout
+
+The following is a target layout, not an exact inventory of current files. The implemented M6
+actions are currently collected in `actions/basic.py`; M6 planning is implemented across `goals.py`,
+`astar.py`, `planner.py` and `executor.py`. The `moves.py`, `costs.py` and `pathfinder/cache.py`
+modules shown below are not separate current modules. The shared path cache is provided by
+`swarm/coordinator.py`.
 
 ```
 pyflayer/
@@ -223,15 +236,22 @@ pyflayer/
 
 **`physics`**: Pure simulation. `engine.step(state, controls, view) -> PlayerState` has no I/O and is deterministic. `TickDriver` calls it at 20 TPS. It consumes `WorldReader`, never `World`.
 
-**`pathfinder`**: Plans on `WorldSnapshot` using the physics constants for cost. It returns a `Path` of `Move` steps. The `executor` drives it through leases.
+**`pathfinder`**: A* searches block-position nodes on a world view and returns a `Path` of
+`BlockPos` waypoints. `PathPlanner.plan()` snapshots the world and runs the search with `run_cpu()`;
+`PathExecutor` follows those waypoints through a lease. The current executor does not replan on
+block changes during execution.
 
-**`actions`**: Behaviours plus the priority/preemption scheduler. They depend on `ActionHost`, a Protocol implemented by `Bot`. That is how `actions` avoids importing `bot`.
+**`actions`**: Behaviours plus the priority/preemption scheduler. Built-in actions are currently in
+`actions/basic.py`. Their host protocol is defined there; the module uses runtime host capabilities
+provided by `Bot`.
 
 **`bot`**: The composition root and the only place the layers meet. `Bot.__init__` builds `ProtocolClient`, `World`, `PhysicsEngine`, `ActionScheduler`, `EventBus` and the handler set, and registers handlers on the bus at priority ≥ 1000.
 
 **`ext.commands` / `ext.tasks`**: Pure consumers of `Bot`'s public API. Nothing in lower layers imports `ext`.
 
-**`swarm`**: Constructs many `Bot`s with a shared `ChunkStore` and one `TickDriver`. It imports `bot` and `world`.
+**`swarm`**: Constructs many `Bot`s with shared chunk storage and one or more tick groups. Each
+group owns a `TickDriver`; bots are distributed across groups when the measured budget requires it.
+The module imports `bot` and `world`.
 
 ### 1.4 Data flow (no cycles)
 
@@ -252,7 +272,7 @@ ACTION    user/ext → bot.scheduler.run(Action, priority)
 
 PLANNING  Planner.snapshot = world.snapshot(bounds)  (pointer copy)
           → run_cpu(astar, snapshot)  (thread; reads immutable sections)
-          → Path → PathExecutor → Lease(MOVEMENT|LOOK) → controls
+          → Path(BlockPos waypoints) → PathExecutor → Lease(MOVEMENT|LOOK) → controls
 ```
 
 Cycle-breaking tools, in order of preference:
@@ -668,7 +688,17 @@ class Lease:                                   # capability token handed to Acti
 7. A `DeathEvent` calls `cancel_all(reason="death")` below EMERGENCY and holds a barrier until `RespawnEvent`.
 8. `Lease.controls` is the only write path to `ControlState` and the look target. Revoking a lease zeroes the controls it set. This is how a mining job stops walking when the bot must flee.
 
+**Current implementation boundary.** The scheduler implements all-or-nothing resource ownership,
+busy or queued submissions, cooperative preemption, critical sections, checkpoints, timeout,
+barrier and inherited-child behavior. Queue priority aging and a `PreemptToken`/`Task.uncancel()`
+protocol from the original design are not present. Public `Bot` movement controls also remain
+available outside actions, so single-writer ownership is not enforced for every caller.
+
 **Survival.** `SurvivalMonitor` is an always-on background component, not a user action. It subscribes to health/food/air/fire/void events and submits `SURVIVAL` actions (`Eat`, `SwimUp`, `LeaveFire`, `AvoidFall`, `Flee`) through the same scheduler. There is no side channel.
+
+**Current implementation.** `SurvivalMonitor` subscribes to `HealthEvent` and queues `Eat` when
+health is at or below its threshold and food is available. Air, fire, void, attacker detection and
+the other example responses above are not implemented.
 
 ### 2.5 Data-driven `minecraft-data` integration
 

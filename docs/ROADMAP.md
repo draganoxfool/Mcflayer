@@ -5,6 +5,11 @@ Milestone plan with definition-of-done gates. Architecture contracts live in
 
 ## Section 3: Phased Engineering Roadmap
 
+Implementation status is tracked separately from milestone acceptance. M6 implementation and unit
+tests are present; its live scenarios and 50k-node performance gate remain unverified. M7's
+implementation and unit tests shipped in 1.0.0; the 50-bot Paper soak and resource benchmarks remain
+unrun. See [Tasks](tasks.md) for the current checklist.
+
 Global exit gate for every milestone: `ruff`, `mypy --strict` and `pyright` clean, `import-linter` clean, tests green on Python 3.11/3.12/3.13, coverage ≥ 90% on new modules, public API changes documented, and a short Handoff Notes file for the next session.
 
 ### M1: Transport, VarInt Framing, Data Loader, Codec Compiler
@@ -88,6 +93,12 @@ Global exit gate for every milestone: `ruff`, `mypy --strict` and `pyright` clea
 
 ### M6: A* Pathfinder & Action Framework
 
+**Current status.** Core implementation and unit tests exist. The roadmap acceptance gates below
+are not complete: no 100-block live traversal, world-change replan scenario, survival escape/resume
+scenario, Docker Paper action scenarios, or 50k-node p99 measurement has been run. The current
+`SurvivalMonitor` responds to health events by submitting `Eat`; it does not implement the broader
+environmental responses described in the original scope.
+
 **Scope.** `pathfinder`, `actions` (scheduler, Dig, Place, Equip, Eat, Attack, Look, GoTo), `SurvivalMonitor`, window clicks and inventory transactions.
 
 **Definition of Done**
@@ -100,6 +111,10 @@ Global exit gate for every milestone: `ruff`, `mypy --strict` and `pyright` clea
 **Testing.** Pure-Python graph tests, golden path-cost tests vs the oracle where comparable, scheduler unit tests with property-based interleavings (no resource double-held, no deadlock, preempted cleanup always runs), and Docker scenario tests (escape lava, mine a tree, build a bridge).
 
 ### M7: Multi-Bot Swarm & Shared World
+
+**Current status.** The swarm implementation and unit tests shipped in 1.0.0. This does not certify
+the 50-bot Paper acceptance gate: the live soak, shared-memory measurement and tick-budget benchmark
+remain outstanding.
 
 **Scope.** `swarm`: `BotCluster`, `SharedWorldRegistry`, staggered login, coordinator (claims, blackboard), shared planner cache, metrics, failure isolation.
 

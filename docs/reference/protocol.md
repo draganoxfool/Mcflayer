@@ -1,5 +1,42 @@
 # `pyflayer.protocol`
 
+Protocol package exports for transport, packet codecs, state tracking, and the low-level client.
+For authentication, use `pyflayer.protocol.auth`; for server status, use
+`pyflayer.protocol.status`.
+
+::: pyflayer.protocol
+    options:
+      members:
+        - CipherPair
+        - Connection
+        - ConnectionState
+        - FrameCodec
+        - Packet
+        - PacketCodec
+        - PacketReader
+        - PacketRegistry
+        - PacketWriter
+        - ProtocolClient
+        - ProtocolCompiler
+        - ServerStatus
+        - StateMachine
+        - decode_varint
+        - decode_varlong
+        - encode_varint
+        - encode_varlong
+        - ping
+        - resolve_address
+      show_root_heading: false
+      show_root_toc_entry: false
+
+::: pyflayer.protocol.client.ProtocolClient
+
+::: pyflayer.protocol.connection.Connection
+
+::: pyflayer.protocol.status.ping
+
+<!--
+
 Low-level protocol types: connection, framing, packet codec, state machine, and client.
 
 ```python

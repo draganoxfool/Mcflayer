@@ -18,7 +18,7 @@ Examples:
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from pyflayer.data.loader import McData
 from pyflayer.errors import ChunkNotLoaded
@@ -178,24 +178,12 @@ class SharedWorld(World):
 
     @property
     def referenced_chunks(self) -> Mapping[ChunkPos, ChunkColumn]:
-        """Read-only mapping of the chunks this bot references."""
-
-        class _View(Mapping[ChunkPos, ChunkColumn]):
-            def __init__(self, world: SharedWorld) -> None:
-                self._world = world
-
-            def __getitem__(self, pos: ChunkPos) -> ChunkColumn:
-                if pos not in self._world._held:
-                    raise KeyError(pos)
-                return self._world._store.chunks[pos]
-
-            def __iter__(self) -> Iterator[ChunkPos]:
-                return iter(self._world._held)
-
-            def __len__(self) -> int:
-                return len(self._world._held)
-
-        return _View(self)
+        """Copy of the chunks this bot currently references."""
+        return {
+            pos: self._store.chunks[pos]
+            for pos in self._held
+            if pos in self._store.chunks
+        }
 
     def __len__(self) -> int:
         return len(self._held)

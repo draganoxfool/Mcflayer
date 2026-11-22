@@ -1,5 +1,30 @@
 # `pyflayer.physics`
 
+Player physics, collision helpers, medium sampling, and tick scheduling.
+
+::: pyflayer.physics
+    options:
+      members:
+        - GRAVITY
+        - JUMP_VELOCITY
+        - PLAYER_EYE_HEIGHT
+        - PLAYER_HEIGHT
+        - PLAYER_SPEED
+        - PLAYER_WIDTH
+        - STEP_HEIGHT
+        - ControlState
+        - Medium
+        - MoveResult
+        - PhysicsEngine
+        - PlayerState
+        - TickDriver
+        - move_box
+        - sample_medium
+      show_root_heading: false
+      show_root_toc_entry: false
+
+    <!--
+
 A deterministic, side-effect-free simulation of a Minecraft Java player. It reads only block
 queries from the world and never sends packets, so the same step can run inside the bot loop, a
 test with `FakeClock`, or a worker thread over a `WorldSnapshot`.

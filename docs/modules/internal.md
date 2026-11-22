@@ -1,7 +1,7 @@
 # Internal helpers
 
-`pyflayer._internal` is private. It exists so time, CPU offload and logging have exactly one
-implementation.
+`pyflayer._internal` contains private clock, CPU-offload, logging, and utility modules used by the
+public packages.
 
 ## Clock (ADR-8)
 
@@ -13,8 +13,8 @@ class Clock(Protocol):
 ```
 
 - `MonotonicClock` wraps `time.monotonic()` and `asyncio.sleep()`.
-- `FakeClock` resolves sleepers **in deadline order** (registration order on ties) when you call
-  `advance(dt)`. Use `await clock.advance_async(dt)` to also let awakened tasks run.
+- `FakeClock` resolves sleepers in deadline order (registration order on ties) when you call
+  `advance(dt)`. Use `await clock.advance_async(dt)` to let awakened tasks run before returning.
 - Cancelling a sleeper removes its heap entry (`clock.pending` tells you how many remain).
 
 ```python
@@ -26,9 +26,10 @@ await task
 
 ## CPU offload
 
-`run_cpu(func, *args, budget_ms=None)` runs synchronous work in a worker thread via
-`asyncio.to_thread`. M1 uses it for work that could exceed the ~2 ms loop budget. Per ADR-1, callers
-must pass immutable data; loop-owned state is never touched from the worker.
+`run_cpu(func, *args, budget_ms=None, **kwargs)` runs a synchronous callable in a worker thread via
+`asyncio.to_thread` and returns its result. If the optional soft time budget is exceeded, it logs a
+warning. Callers should pass data that the worker can safely access without mutating event-loop-owned
+state.
 
 ## Logging
 
@@ -37,5 +38,5 @@ the `pyflayer` namespace. Library code never calls `print()`.
 
 ## Utilities
 
-`ceil_log2`, `signed(bits)`, `clamp`, `iter_bits`, `batched`, `to_bytes` — small, dependency-free
-helpers used by paletted decode and packet code in later milestones.
+The private utility module contains helpers such as `ceil_log2`, `signed`, `clamp`, `iter_bits`,
+`batched`, and `to_bytes`.

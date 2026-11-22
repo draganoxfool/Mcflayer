@@ -1,8 +1,8 @@
 # Protodef compiler
 
-`minecraft-data` describes packets as JSON. Interpreting that JSON per packet is too slow, so
-`ProtocolCompiler` compiles every type into a small codec object with `read(reader, ctx)` and
-`write(writer, value, ctx)`. Compilation is lazy per packet and cached.
+`minecraft-data` describes packets as JSON schemas. `ProtocolCompiler` compiles schema types into
+codec objects with `read(reader, ctx)` and `write(writer, value, ctx)`. Packet codecs are built lazily
+and cached by state and direction.
 
 ## Packet registry
 
@@ -26,7 +26,8 @@ packet.fields  # dict of decoded fields
 ```
 
 - `codec(state, direction)` returns a `PacketCodec` exposing `ids`, `names`, `decode()`, `encode()`.
-- Unknown packet ids raise `UnknownPacket` carrying the raw body; M1 policy is never fatal.
+- Unknown packet ids raise `UnknownPacket` carrying the raw body; callers decide whether to skip or
+  reject them.
 - Trailing bytes are rejected by default (`strict=True`); pass `strict=False` in diagnostics.
 - `register_native(state, direction, name, codec)` installs a hand-written override (used by
   `protocol/native` in later milestones).
@@ -43,6 +44,8 @@ never wrong bytes.
 
 ## Current compile coverage (1.8.9)
 
+For the vendored 1.8 schema, the current compile report is:
+
 | State / direction | Compiled | Unsupported |
 |---|---|---|
 | handshaking / toServer | 2 / 2 | — |
@@ -53,8 +56,9 @@ never wrong bytes.
 | play / toServer | 26 / 26 | — |
 | play / toClient | 74 / 74 | — |
 
-All play packets compile for 1.8.9. The final gap was `entityMetadataLoop`; M3 added the native
-codec in `protocol/native/entity_metadata.py`.
+The play `entityMetadataLoop` type is handled by the implementation, including the native 1.8 codec
+in `protocol/native/entity_metadata.py`. These 1.8 results do not imply that another schema compiles
+or that its packet behavior is supported end to end.
 
 ```python
 report = registry.compiler.compile_state("play", "toClient")

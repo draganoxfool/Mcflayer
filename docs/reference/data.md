@@ -1,5 +1,43 @@
 # `pyflayer.data`
 
+Data loading, registries, version helpers, and feature flags. The repository vendors data snapshots
+for `pc/1.8`, `pc/1.20.4`, and `pc/26.1`. A vendored snapshot alone does not establish complete
+protocol, gameplay, or live-server support for its version.
+
+::: pyflayer.data
+    options:
+      members:
+        - Biome
+        - BiomeRegistry
+        - Block
+        - BlockRegistry
+        - Effect
+        - EffectRegistry
+        - Entity
+        - EntityRegistry
+        - Features
+        - Food
+        - FoodRegistry
+        - Item
+        - ItemRegistry
+        - McData
+        - ProtocolSchema
+        - Registry
+        - ShapeTable
+        - VersionInfo
+        - default_data_dir
+        - protocol_for
+        - version_for_protocol
+        - version_key
+      show_root_heading: false
+      show_root_toc_entry: false
+
+The package's reference target is Minecraft 1.8.9 (protocol 47). `Features` is computed from
+version information; consult its rendered fields and methods rather than treating a feature flag as
+proof that all corresponding protocol behavior is implemented.
+
+<!--
+
 Data loading, version mapping, registries, and feature flags.
 
 ```python

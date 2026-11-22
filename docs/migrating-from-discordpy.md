@@ -1,8 +1,6 @@
 # Migrating from discord.py
-
-mcflayer borrows discord.py's *shape*, not its surface. Code written for discord.py reads naturally,
-but this is not a drop-in replacement. This page lists what carries over and what is deliberately
-gone.
+mcflayer borrows selected discord.py patterns, but is not a drop-in replacement. Its command API
+targets Minecraft chat and world state, not Discord interactions or permissions.
 
 ## What carries over
 
@@ -16,7 +14,7 @@ gone.
 | converters, `Greedy`, `Range` | same names and behaviour |
 | `@commands.check`, `cooldown`, `max_concurrency` | same |
 | `commands.BucketType` | same (`player`, `default`, `global_`) |
-| `tasks.loop(seconds=…)` | same, plus `ticks=` |
+| `tasks.loop(seconds=...)` | same pattern, plus `ticks=` |
 | `setup(bot)` / `teardown(bot)` | same, with atomic hot reload |
 | `bot.load_extension` / `unload` / `reload` | same |
 | `ctx.reply()` / `ctx.send()` | same (rate-limited chat) |
@@ -33,7 +31,7 @@ gone.
 | `Intents`, gateway, sharding, resume | Not a gateway client. | `Bot` owns one connection |
 | `Client`/`Bot` split | One composition root. | `commands.Bot` |
 | `discord` import aliases | Not a compatibility target. | `pyflayer.ext.commands` |
-| `tasks.loop(time=…)` scheduling | Accepted for familiarity, not scheduled. | `seconds` / `ticks` |
+| `tasks.loop(time=...)` scheduling | Not scheduled. | `seconds` / `ticks` |
 | Extension `Bot` subclass hooks (`on_message`) | No `on_message`; chat is a typed event. | `@Cog.listener()` `on_chat` |
 
 ## Dispatch differences
@@ -41,7 +39,7 @@ gone.
 discord.py:
 
 ```python
-bot = commands.Bot(prefix="!")
+bot = commands.Bot(command_prefix="!")
 
 
 @bot.command()
@@ -49,7 +47,7 @@ async def ping(ctx):
     await ctx.send("pong")
 
 
-# "!ping" in chat
+# "!ping" in a Discord channel
 ```
 
 mcflayer:
@@ -63,8 +61,8 @@ async def ping(ctx):
     await ctx.reply("pong")
 
 
-# "!ping" or "Steve !ping" in public chat, or a whisper "!ping",
-# or: await bot.dispatch_command("ping", author="Alex", is_whisper=True)
+# A configured prefix or address/whisper can dispatch a chat command.
+# Code can dispatch directly with await bot.dispatch_command(...).
 ```
 
 - `ctx.prefix` is the matched prefix, or `None` when only addressing matched.

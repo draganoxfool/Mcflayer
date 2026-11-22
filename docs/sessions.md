@@ -3,6 +3,11 @@
 One entry per implementation session. Newest last. This is the running log the roadmap asks for;
 the structured backlog lives in [Tasks](tasks.md).
 
+Historical entries retain the status recorded when written. Current status: M6 source and unit tests
+exist; its live traversal, replanning/survival scenarios and 50k-node performance gate remain
+outstanding. M7 implementation shipped in 1.0.0; the 50-bot Paper soak and resource benchmarks are
+deferred. See [Roadmap](ROADMAP.md) and [Tasks](tasks.md).
+
 ## Session 1 — 2026-11-20 — M1 foundation, targeting 1.8.9
 
 **Prompt.** Read the design docs and create the first milestone module. Target 1.8.9 if that is
@@ -430,4 +435,66 @@ ruff check src tests                      # All checks passed
 chaos/soak leak tests need a live server and a longer CI budget. M6 remains the missing layer: the
 swarm's claims, roles and path cache are ready but nothing consumes them automatically yet.
 
-**Version.** `0.9.0`.
+**Version.** `1.0.0`.
+
+## Session 8 — 2026-11-22 — M6 pathfinding and actions
+
+**Prompt.** Implement the remaining milestone (M6): A* pathfinding and the action framework.
+
+**Starting point.** M1–M5 and M7 were implemented and green; `actions` and `pathfinder` were empty
+packages. The swarm's claims, roles and path cache existed but nothing consumed them. M6 was
+implemented without changing the M7 surface.
+
+**Implemented**
+
+- `pathfinder/goals.py`: ten immutable goals with admissible heuristics, including composites and a
+  callable-target `GoalFollow`.
+- `pathfinder/astar.py`: deterministic A* over a `WorldView`, cached block classification, flat/
+  diagonal/jump/climb/fall costs, support and hazard checks, no corner cutting, node budget with best
+  partial path.
+- `pathfinder/planner.py`: `Path`, `PathPlanner.plan_sync`/`plan`; the async path snapshots once and
+  searches through `run_cpu`. Optional structural path cache (`swarm.PathCache` fits without an
+  import).
+- `pathfinder/executor.py`: `PathExecutor.follow` writes look/move/sprint/jump through the lease
+  only, checks reach, detects stalls and caps ticks per waypoint; emits path events.
+- `actions/base.py`: `Resource`, `Priority`, `OnPreempt`, `ActionState`, `Action`, `Lease`,
+  `ControlHandle`, `ActionHandle`.
+- `actions/scheduler.py`: all-or-nothing acquisition, busy/queue, cooperative preemption with
+  `ABORT`/`RESUME`/`REQUEUE`, checkpoints, critical sections, timeouts, death barrier, inherited
+  children and metrics.
+- `actions/basic.py`: `Look`, `LookAt`, `Equip`, `Eat`, `Dig`, `Place`, `Attack`, `GoTo`.
+  `actions/facade.py` exposes them as `bot.actions`; `actions/survival.py` eats at `SURVIVAL`.
+- Bot wiring: `scheduler`, `actions` and `survival` slots; survival starts on join, death sets the
+  barrier, respawn releases it and close/disconnect cancel everything.
+- Seven action/path events in the catalog, exported from `pyflayer.events`; `requires_idle()` added
+  to `ext.commands`.
+
+**Bugs found while verifying**
+
+- `Lease` exposed only `controls` while actions called `lease.look()`/`lease.jump()`. Both are now
+  delegating methods; `lease.controls` remains the control surface.
+- `ActionScheduler` reported resources with `int(handle.resources)`. `Resource` is a plain `Flag`
+  (not `IntFlag`), so every action failed during startup; it now reports
+  `handle.resources.value`.
+- The preemption wait used `clock.sleep(0.001)`, which never advances under `FakeClock` and could
+  deadlock a resumed action. It now waits on a `_preempt_event` set when preemption finishes.
+- `queue=True` still preempted a lower-priority holder because the preemption branch ran before the
+  queue branch. Queued submissions now only wait.
+
+**Verification**
+
+```bash
+source .venv/bin/activate
+python -m pytest tests/test_actions.py -q    # 14 passed
+python -m pytest tests/test_pathfinder.py -q # 7 passed
+python -m pytest -q                          # 344 passed
+ruff check src tests examples                # All checks passed
+mypy src/pyflayer/actions src/pyflayer/pathfinder  # no issues
+lint-imports                                 # 1 contract kept
+mkdocs build --strict                        # docs built
+```
+
+**Not run.** The roadmap's Docker Paper scenarios (dig/place/equip/goto under anti-cheat), the
+50k-node search p99 benchmark and the 50-bot action soak need a live server and a longer CI budget.
+
+**Version.** `1.1.1`.

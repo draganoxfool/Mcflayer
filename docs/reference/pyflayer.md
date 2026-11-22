@@ -1,5 +1,68 @@
 # `pyflayer`
 
+The import package is `pyflayer`; the distribution name is `mcflayer`.
+
+::: pyflayer
+    options:
+      members:
+        - __version__
+        - PROTOCOL_VERSION
+        - REFERENCE_VERSION
+        - AABB
+        - BlockPos
+        - BlockState
+        - Bot
+        - ChatComponent
+        - ChatEvent
+        - ChatMessage
+        - ChunkColumn
+        - ChunkPos
+        - ChunkSection
+        - Connection
+        - ConnectionState
+        - ControlState
+        - Dimension
+        - Entity
+        - EntityTracker
+        - EventBus
+        - Features
+        - FrameCodec
+        - GameMode
+        - ItemStack
+        - JoinEvent
+        - McData
+        - Packet
+        - PacketReader
+        - PacketRegistry
+        - PacketWriter
+        - PalettedContainer
+        - PhysicsEngine
+        - PlayerState
+        - ProtocolClient
+        - PyFlayerError
+        - RayHit
+        - SectionPos
+        - ServerStatus
+        - SpawnEvent
+        - StateMachine
+        - TickDriver
+        - Vec3
+        - VersionInfo
+        - World
+        - WorldSnapshot
+        - errors
+        - ping
+      show_root_heading: false
+      show_root_toc_entry: false
+      show_attribute_values: true
+
+`BotState` and `PlayerInfo` are exported by `pyflayer.bot`, not by the top-level package. See the
+[bot reference](bot.md) for those types. `Vec3` is defined in `pyflayer.models` and re-exported here.
+
+`ServerStatus` and `ping` are exposed lazily from `pyflayer.protocol.status`.
+
+<!--
+
 ```python
 import pyflayer
 ```

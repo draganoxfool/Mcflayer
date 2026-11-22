@@ -1,5 +1,20 @@
 # `pyflayer._internal`
 
+Internal helpers. These names are available from the package, but their presence here does not
+make them part of the stable public API.
+
+::: pyflayer._internal
+    options:
+      members:
+        - Clock
+        - FakeClock
+        - MonotonicClock
+        - run_cpu
+      show_root_heading: false
+      show_root_toc_entry: false
+
+    <!--
+
 Internal utilities, clocks, and implementation details. These are not part of the public API
 surface but are documented here for completeness and advanced usage.
 

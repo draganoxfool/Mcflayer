@@ -1,4 +1,10 @@
-# Prompts
+# Implementation Prompts
+
+This page records milestone specifications used to guide implementation. A requirement in a prompt
+does not establish that the feature or its acceptance gates are complete. Current implementation
+and validation status is maintained in the [roadmap](ROADMAP.md) and [tasks](tasks.md). M6 source
+and unit tests exist while live and performance gates remain open; M7 implementation shipped in
+1.0.0 while its 50-bot soak remains deferred.
 
 ## Section 4: Mega-Prompts
 
@@ -653,11 +659,12 @@ DEFINITION OF DONE
 
 ---
 
-## Suggested workflow
+## Historical Workflow
 
 1. Paste COMMON PREAMBLE + `ARCHITECTURE.md` + the milestone prompt into a fresh session.
 2. Run the checks. Feed failures back in the same session.
 3. Save the **HANDOFF NOTES** into `docs/handoff/M<n>.md` and attach them to the next session.
 4. Before starting M3 and M4, generate the Mineflayer oracle fixtures (`tools/mineflayer_oracle/`). They are your ground truth, and the AI cannot verify its own physics or chunk decoding without them.
 
-Two decisions are worth making before M1: the target-version policy (1.20.4 first, as I proposed), and whether `numpy` stays a hard dependency. I recommend keeping it hard, because a pure-Python fallback for paletted decode would double the surface area. I can expand any section into its final `.md` form, or tighten the prompts for a specific coding tool.
+The target version is now 1.8.9 / protocol 47, and `numpy` is a runtime dependency. The earlier
+questions and recommendations record the prompt's original planning context, not open decisions.

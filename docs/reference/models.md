@@ -1,5 +1,34 @@
 # `pyflayer.models`
 
+Value types and protocols used across the library. `Vec3` is defined at
+`pyflayer.models.Vec3`; it is also re-exported from `pyflayer`.
+
+::: pyflayer.models
+    options:
+      members:
+        - AABB
+        - EMPTY_ITEM
+        - BlockPos
+        - ChatComponent
+        - ChatMessage
+        - ChunkPos
+        - ConnectionState
+        - Difficulty
+        - Dimension
+        - Face
+        - GameMode
+        - Hand
+        - ItemStack
+        - Pose
+        - SectionPos
+        - Vec3
+        - chat_component_from_json
+        - plain_text_from_json
+      show_root_heading: false
+      show_root_toc_entry: false
+
+    <!--
+
 Core data types used throughout PyFlayer: positions, chat components, items, and enums.
 
 ```python

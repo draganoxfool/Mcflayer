@@ -1,5 +1,14 @@
 # `pyflayer.ext.commands`
 
+Command framework exports. Signatures and annotations are rendered from the implementation.
+
+::: pyflayer.ext.commands
+    options:
+      show_root_heading: false
+      show_root_toc_entry: false
+
+    <!--
+
 The discord.py-inspired command layer. This page documents the public classes and functions; the
 [guide](../modules/commands.md) explains usage and the dispatch model.
 

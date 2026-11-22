@@ -1,8 +1,7 @@
 # Tasks (`pyflayer.ext.tasks`)
 
-`tasks.loop` runs a coroutine repeatedly. Intervals can be wall-clock (`seconds`, `minutes`,
-`hours`), or Minecraft-native via `ticks=`, which synchronises iterations to the bot's
-`PhysicsTickEvent` counter instead of wall time.
+`tasks.loop` declares a recurring coroutine. It supports wall-clock intervals (`seconds`, `minutes`,
+or `hours`) and intervals counted from `PhysicsTickEvent` (`ticks`).
 
 ## Quick start
 
@@ -39,7 +38,8 @@ async def sample(self):
 
 `ticks=N` waits for N `PhysicsTickEvent`s between iterations, so the loop stays aligned with the
 simulation even when wall-clock timing drifts. Without a bot (for example in a unit test) it falls
-back to `N / 20` seconds on the injected clock.
+`ticks=N` waits for N `PhysicsTickEvent`s between iterations when a bot event source is available.
+Without one, it waits `N / 20` seconds using the injected clock when available, or asyncio time.
 
 ## Lifecycle
 
@@ -74,7 +74,7 @@ async def heartbeat(self): ...
 | `seconds` / `minutes` / `hours` | Wall-clock interval; at most one |
 | `ticks` | Physics-tick interval (Minecraft-native) |
 | `count` | Stop after this many iterations; `None` runs forever |
-| `reconnect` | Reserved for pause/resume across reconnects |
+| `reconnect` | When true, pauses timed waits while disconnected and resumes on `ConnectEvent`; when false, a disconnect cancels the loop |
 | `name` | Log/task name |
 
 ## Cogs and reloads
@@ -88,6 +88,6 @@ running.
 
 ## Limitations
 
-- `time=` is accepted for discord.py familiarity but not scheduled.
+- `time=` is accepted for compatibility but is not scheduled. Use `seconds`, `minutes`, `hours`, or
+    `ticks`.
 - There is no persistence across process restarts.
-- `reconnect=True` is stored but reconnect pausing is not yet wired to `DisconnectEvent`.

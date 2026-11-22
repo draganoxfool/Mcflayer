@@ -1,7 +1,8 @@
 """Bot composition root: protocol, events, world state, inventory and physics.
 
 The bot owns the 20 TPS physics tick (M4), emits vanilla-style movement packets and reconciles
-server positions/teleports. The action scheduler arrives in a later milestone.
+server positions/teleports. :attr:`scheduler` is the only writer of movement/look/hand controls;
+use :attr:`actions` for ``goto``/``dig``/``place``/``equip``/``eat``/``attack``.
 
 Examples:
     >>> from pyflayer.bot import Bot
@@ -22,6 +23,7 @@ from dataclasses import dataclass, replace
 from typing import Any
 
 from pyflayer._internal.clock import Clock, MonotonicClock
+from pyflayer.actions import ActionFacade, ActionScheduler, SurvivalMonitor
 from pyflayer.bot import interactions as _interactions
 from pyflayer.bot import windows as _windows
 from pyflayer.bot.inventory import (
@@ -138,6 +140,7 @@ class Bot:
         "_shared_tick_driver",
         "_teleport_id",
         "_teleport_pending",
+        "actions",
         "attributes",
         "auth",
         "auto_respawn",
@@ -168,8 +171,10 @@ class Bot:
         "position",
         "reconnect",
         "saturation",
+        "scheduler",
         "spawn_position",
         "spawned",
+        "survival",
         "tick_driver",
         "use_srv",
         "username",
@@ -228,6 +233,9 @@ class Bot:
         self.world = world if world is not None else World(mc)
         self.entities = EntityTracker(mc)
         self.inventory = Inventory()
+        self.scheduler = ActionScheduler(self, clock=self.clock)
+        self.actions = ActionFacade(self)
+        self.survival = SurvivalMonitor(self)
         self.experience: tuple[float, int, int] = (0.0, 0, 0)
         self.attributes: dict[str, float] = {}
         self.kick_reason: ChatComponent | None = None
@@ -402,6 +410,8 @@ class Bot:
     async def close(self) -> None:
         """Close the connection and stop reconnecting. Idempotent."""
         self._closed = True
+        self.scheduler.cancel_all(reason="bot closed")
+        self.survival.stop()
         await self._close_client()
 
     async def __aenter__(self) -> Bot:
@@ -412,6 +422,9 @@ class Bot:
         await self.close()
 
     async def _close_client(self) -> None:
+        if self.scheduler is not None:
+            self.scheduler.cancel_all(reason="disconnected")
+        self.survival.stop()
         await self._stop_physics()
         client = self.client
         if client is not None:
@@ -771,6 +784,7 @@ class Bot:
         )
         self._ready.set()
         await self._send_settings()
+        self.survival.start()
         self.events.dispatch(self._join_event)
 
     async def _send_settings(self) -> None:
@@ -876,6 +890,7 @@ class Bot:
         self.events.dispatch(HealthEvent(self.health, self.food, self.saturation))
         if self.health <= 0 and not self.dead:
             self.dead = True
+            self.scheduler.set_barrier(True)
             self.controls = ControlState()
             self._jump_next = False
             self.events.dispatch(DeathEvent(self.health))
@@ -895,6 +910,7 @@ class Bot:
         self._last_sprinting = False
         self._last_sneaking = False
         self.spawned = False
+        self.scheduler.release_barrier()
         self.events.dispatch(RespawnEvent(self.dimension))
         if previous != self.dimension:
             self.events.dispatch(DimensionChangeEvent(self.dimension, previous))

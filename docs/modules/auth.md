@@ -1,15 +1,15 @@
 # Auth
 
-`pyflayer.protocol.auth` supplies the identity used for Login Start and, for online-mode servers,
-the session-server proof that follows the encryption request.
+`pyflayer.protocol.auth` supplies the session used for Login Start and the session-server join used
+when a server requests online-mode encryption.
 
 ## Providers
 
-| Provider | Use | Join behaviour |
+| Provider | Use | `join()` behavior |
 |---|---|---|
-| `OfflineAuth(name)` | Cracked/offline servers (PikaNetwork) | No-op |
-| `MicrosoftAuth(...)` | Online-mode accounts | `sessionserver.mojang.com/session/minecraft/join` |
-| `StaticAuth(session, online_join=False)` | Tests / a token cache you own | Optional |
+| `OfflineAuth(username)` | Offline-mode identity | No-op |
+| `MicrosoftAuth(...)` | Microsoft/Xbox/Minecraft account flow | Session-server join |
+| `StaticAuth(session, online_join=False)` | Caller-supplied session | Optional session-server join |
 
 All providers implement the `AuthProvider` Protocol and return a `Session(username, uuid,
 access_token, xuid)`.
@@ -26,9 +26,9 @@ session = await auth.login()  # device code -> XBL -> XSTS -> Minecraft profile
 
 ## Offline UUID
 
-The UUID is `UUIDv3("OfflinePlayer:<name>")`, matching the vanilla server, with the version and
-RFC 4122 variant bits set. Names are validated against vanilla's rules (1–16 characters,
-`[A-Za-z0-9_]`); failures raise `AuthError`.
+`offline_uuid(username)` returns UUIDv3 over `OfflinePlayer:<name>` and sets the version and RFC 4122
+variant bits. `OfflineAuth` validates names as 1–16 ASCII letters, digits, or underscores; invalid
+names raise `AuthError`.
 
 ## Server hash
 
@@ -39,10 +39,10 @@ requires.
 
 ## Microsoft flow (not live-tested here)
 
-Device code (`login.microsoftonline.com/consumers`) → Xbox Live user token → XSTS token for
-`rp://api.minecraftservices.com/` → `login_with_xbox` → `/minecraft/profile`. Polling uses the
-injected `Clock`; `authorization_pending` and `slow_down` are handled, and `invalid_grant`,
-`invalid_client` and `expired_token` become `AuthError`s. A `refresh_token` can be supplied to skip
-the interactive step. Tokens are kept in memory only.
+The provider implements the consumer device-code flow, Xbox Live authentication, XSTS authorization,
+Minecraft Services login, and profile retrieval. Polling uses the injected `Clock`; recognized
+pending/slow-down responses are handled, and selected OAuth errors become `AuthError`. A
+`refresh_token` can be supplied instead of starting device authorization. The provider updates its
+refresh token in memory and does not persist it to disk.
 
-> Limitation: no on-disk token cache yet, and the flow needs a real Microsoft account to verify.
+> Limitation: the flow has not been verified here with a live Microsoft account.

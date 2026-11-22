@@ -1,5 +1,44 @@
 # `pyflayer.events`
 
+Event types, subscriptions, expectations, and the event bus.
+
+::: pyflayer.events
+    options:
+      members:
+        - BlockUpdateEvent
+        - ChatEvent
+        - ChunkLoadEvent
+        - ChunkUnloadEvent
+        - ConnectEvent
+        - DeathEvent
+        - DimensionChangeEvent
+        - DisconnectEvent
+        - EntityGoneEvent
+        - EntityMetadataEvent
+        - EntityMoveEvent
+        - EntitySpawnEvent
+        - ErrorEvent
+        - Event
+        - EventBus
+        - Expectation
+        - ExperienceEvent
+        - HealthEvent
+        - InventoryChangedEvent
+        - JoinEvent
+        - KickEvent
+        - LoginEvent
+        - PhysicsTickEvent
+        - PlayerInfoEvent
+        - RespawnEvent
+        - SpawnEvent
+        - Subscription
+        - event_for_name
+        - event_name
+      show_root_heading: false
+      show_root_toc_entry: false
+
+    <!--
+
 Typed, priority-ordered event bus. Events dispatch on their class, so there is no string lookup
 on the hot path; handler names are derived for the `@bot.event` decorator.
 
@@ -47,6 +86,13 @@ Every event class and its corresponding handler name.
 | `DisconnectEvent(reason, error)` | `on_disconnect` | Connection ended |
 | `ErrorEvent(event, listener, exception)` | `on_error` | A listener raised |
 | `PhysicsTickEvent(tick, position, on_ground)` | `on_physics_tick` | One bot physics tick completed |
+| `ActionStartedEvent(action, priority, resources)` | `on_action_started` | An action acquired its lease and started |
+| `ActionFinishedEvent(action, state, duration, error=None)` | `on_action_finished` | An action reached a terminal state |
+| `ActionPreemptedEvent(action, by=None)` | `on_action_preempted` | A higher-priority action took the lease |
+| `PathStartedEvent(goal, complete, length)` | `on_path_started` | A plan is ready and following starts |
+| `PathUpdatedEvent(position, waypoint)` | `on_path_updated` | The executor reached a waypoint |
+| `PathResetEvent(reason)` | `on_path_reset` | A path was abandoned |
+| `GoalReachedEvent(goal)` | `on_goal_reached` | The final waypoint was reached |
 
 ## Bus API
 

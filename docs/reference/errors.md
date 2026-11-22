@@ -1,5 +1,48 @@
 # `pyflayer.errors`
 
+Library-defined exceptions are declared in `pyflayer.errors`. Their actual inheritance and
+constructors are rendered from source below. Python built-in exceptions may also be raised by
+operations; this page does not claim that every failure derives from `PyFlayerError`.
+
+::: pyflayer.errors
+    options:
+      members:
+        - PyFlayerError
+        - ProtocolError
+        - MalformedPacket
+        - UnknownPacket
+        - FramingError
+        - CompressionError
+        - StateError
+        - UnsupportedVersion
+        - UnsupportedType
+        - ConnectionClosed
+        - AuthError
+        - LoginRejected
+        - KickedError
+        - DataError
+        - MissingRegistryEntry
+        - WorldError
+        - ChunkNotLoaded
+        - OutOfWorldBounds
+        - ActionError
+        - ActionBusy
+        - ActionPreempted
+        - ActionCancelled
+        - ActionFailed
+        - LeaseRevoked
+        - PathError
+        - NoPath
+        - PathTimeout
+        - ExtensionError
+        - ExtensionNotLoaded
+        - ExtensionAlreadyLoaded
+        - ExtensionFailed
+      show_root_heading: false
+    show_root_toc_entry: false
+
+<!--
+
 The exception tree for PyFlayer. Every error raised by library code derives from
 :class:`PyFlayerError` (ADR-10). Errors carry structured fields so callers can react
 without parsing strings.

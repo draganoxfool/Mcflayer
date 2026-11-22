@@ -20,6 +20,9 @@ from pyflayer.models.vec3 import Vec3
 
 __all__ = [
     "EVENT_CATALOG",
+    "ActionFinishedEvent",
+    "ActionPreemptedEvent",
+    "ActionStartedEvent",
     "BlockUpdateEvent",
     "ChatEvent",
     "ChunkLoadEvent",
@@ -34,11 +37,15 @@ __all__ = [
     "EntitySpawnEvent",
     "ErrorEvent",
     "ExperienceEvent",
+    "GoalReachedEvent",
     "HealthEvent",
     "InventoryChangedEvent",
     "JoinEvent",
     "KickEvent",
     "LoginEvent",
+    "PathResetEvent",
+    "PathStartedEvent",
+    "PathUpdatedEvent",
     "PhysicsTickEvent",
     "PlayerInfoEvent",
     "RespawnEvent",
@@ -242,6 +249,64 @@ class PhysicsTickEvent(Event):
     on_ground: bool
 
 
+@dataclass(frozen=True, slots=True)
+class ActionStartedEvent(Event):
+    """An action acquired its resources and started running."""
+
+    action: str
+    priority: str
+    resources: int
+
+
+@dataclass(frozen=True, slots=True)
+class ActionFinishedEvent(Event):
+    """An action reached a terminal state."""
+
+    action: str
+    state: str
+    duration: float = 0.0
+    error: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ActionPreemptedEvent(Event):
+    """A higher-priority action took a lease away."""
+
+    action: str
+    by: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class PathStartedEvent(Event):
+    """A path search finished and the executor started following it."""
+
+    goal: object
+    complete: bool
+    length: int
+
+
+@dataclass(frozen=True, slots=True)
+class PathUpdatedEvent(Event):
+    """The executor reached a waypoint."""
+
+    position: object
+    waypoint: object
+
+
+@dataclass(frozen=True, slots=True)
+class PathResetEvent(Event):
+    """A path was abandoned (stuck, failed or cancelled)."""
+
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class GoalReachedEvent(Event):
+    """The executor reached the final waypoint."""
+
+    goal: object
+
+
 EVENT_CATALOG: dict[str, type] = {
     cls.__event_name__: cls
     for cls in (
@@ -268,6 +333,13 @@ EVENT_CATALOG: dict[str, type] = {
         DimensionChangeEvent,
         ExperienceEvent,
         PhysicsTickEvent,
+        ActionStartedEvent,
+        ActionFinishedEvent,
+        ActionPreemptedEvent,
+        PathStartedEvent,
+        PathUpdatedEvent,
+        PathResetEvent,
+        GoalReachedEvent,
     )
 }
 

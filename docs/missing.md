@@ -1,8 +1,50 @@
 # Missing Features & Future Ideas
 
-This document outlines features that are **not yet implemented** in pyflayer but could be added to make the library more useful for bot operators, automation enthusiasts, and anyone who wants to run semi-afk or fully-afk Minecraft bot setups. The target audience is people who like bots and automation — people who want to set up farms, AFK farms, mini-game grinders, and general purpose bots that handle routine tasks.
+This page lists proposals, not supported APIs or committed requirements. Example names from earlier
+drafts were illustrative rather than implemented interfaces. Current features are documented in the
+[module guides](modules/index.md); milestone acceptance status is tracked in the [roadmap](ROADMAP.md)
+and [tasks](tasks.md).
 
-The project currently focuses on 1.8.9/protocol-47, so many of these features would need protocol extensions for modern Minecraft versions. However, even within 1.8.9 scope, there are many useful additions.
+## Proposed Work
+
+The following areas are not provided as high-level automation features:
+
+- **Macros:** record and replay sequences of chat, item use and inventory interactions.
+- **Inventory organization:** search, filter and sort player or container inventories.
+- **Combat policy:** target selection, weapon choice and repeated attack scheduling beyond the
+  existing one-shot `Attack` action.
+- **Chat automation:** configurable pattern-based responses and response policies beyond typed chat
+  events and the command extension.
+- **Effects and potion operations:** inspect effect state and automate brewing or potion use.
+- **Trading and crafting interfaces:** automate villager trades, anvils, enchanting and brewing
+  containers.
+- **Flight and off-hand workflows:** higher-level elytra, flight and off-hand control.
+- **Farm policies:** crop, breeding and harvesting routines built from world state and actions.
+- **Reconnect state restoration:** persist and reconcile inventory or position across sessions.
+- **Operational telemetry:** per-bot packet rates, memory measurements and alert policies beyond
+  the current swarm and tick metrics.
+
+## Existing Building Blocks
+
+The library already provides one-shot actions such as `Dig`, `Place`, `Equip`, `Eat`, `Attack`,
+`Look` and `GoTo`, along with A* path planning and swarm coordination primitives. These do not
+provide the higher-level policies listed above. The M6 live and performance gates and M7 50-bot soak
+are separate validation work, not missing API proposals.
+
+The current reference target is Minecraft Java 1.8.9 / protocol 47. Modern protocol behavior needs
+additional data and codecs and is not implied by this proposal list.# Missing Features & Future Ideas
+
+This page is a proposal list, not an API reference. Example calls are illustrative and are not
+implemented unless listed in module documentation. Scheduled actions and pathfinding are available
+([Actions](modules/actions.md), [Pathfinding](modules/pathfinding.md)); multi-bot coordination
+primitives are also present ([Swarm](modules/swarm.md)). Their validation status is tracked in the
+[roadmap](ROADMAP.md).
+
+The ideas below describe possible additions for bot operators and automation use cases. They do not
+define project requirements or claim support for any server behavior.
+
+The current reference target is 1.8.9 / protocol 47. Modern protocol behavior requires additional
+data and codecs and is not implied by these proposals.
 
 ---
 

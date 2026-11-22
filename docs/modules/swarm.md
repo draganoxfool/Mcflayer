@@ -1,9 +1,7 @@
 # Swarm (`pyflayer.swarm`)
 
-Run dozens of bots against one server without paying for dozens of worlds. A `BotCluster` shares
-chunk storage, spreads bots over tick drivers, staggers logins to respect the server's connection
-throttle, isolates failures and exposes cooperation primitives (claims, a blackboard and a path
-cache).
+`BotCluster` supervises bots configured for one server. It can share chunk storage, assign bots to
+tick drivers, stagger login attempts, isolate per-bot failures, and expose coordination primitives.
 
 ```python
 from pyflayer.swarm import BotCluster
@@ -22,11 +20,11 @@ Every swarm feature is opt-in. A single bot can keep using `pyflayer.Bot` unchan
 ## Shared world
 
 `SharedWorldRegistry` owns one `ChunkStore` per `(server, dimension)`. Each bot gets a `SharedWorld`
-view:
+view. Each connection decodes its incoming chunk packet before calling `apply_chunk`; the store can
+reuse an existing column rather than replacing it when that copy is not newer.
 
-- the first bot to receive a chunk decodes and inserts it;
-- every later bot that receives the same chunk only adds a refcount;
-- duplicate block updates are applied once, so only one bot emits `BlockUpdateEvent`;
+- a view adds a reference when it acquires a chunk;
+- block updates mutate the shared column; each bot's packet handler may dispatch its own event;
 - a view only reads/updates chunks *it* references, even though other chunks are in the same store;
 - `clear()` (respawn, disconnect, dimension change) releases refs; the column is collected when the
   last bot releases it;
@@ -42,14 +40,12 @@ The registry is loop-thread-only and lives on the cluster; bots never mutate it 
 
 ## Tick groups
 
-Bots are distributed round-robin over `tick_groups` `TickDriver`s. Every driver runs at 20 TPS and
-calls `bot.physics_tick()` for its group, so each bot keeps its own 50 ms movement cadence while no
-single callback handles all bots.
+Bots are assigned round-robin to `tick_groups` `TickDriver`s. Each driver invokes
+`bot.physics_tick()` for the bots assigned to that group.
 
-`tick_budget_ms` (default 50 ms) is monitored through the p99 callback duration. When it is exceeded
-and fewer than `max_tick_groups` drivers exist, the cluster adds a group, redistributes bots and logs
-a warning. `cluster.metrics().degraded` reports that this happened. Bots constructed by the cluster
-already receive the driver that owns their group; they never start private physics loops.
+When the observed p99 group callback duration exceeds `tick_budget_ms` and the configured group limit
+has not been reached, the cluster adds a driver and marks `degraded`. Bots created by the cluster
+receive their group's driver and do not start private physics loops.
 
 ## Login staggering
 
@@ -127,11 +123,9 @@ async def on_bot_kicked(event):
 
 ## Supervision and failure isolation
 
-Each registered bot runs its own supervisor task. A kick, protocol error or user exception removes
-only that bot (non-throttle kicks by default; set `remove_on_kick=False` to retry). Throttle kicks and
-ordinary disconnects are retried with jittered exponential backoff
-(`base_backoff`, `max_backoff`, `max_attempts`; `0` means unlimited). Exceptions in cluster-event
-handlers are isolated by the `EventBus` like any other listener.
+Each registered bot runs a supervisor task. Non-throttle kicks remove that bot by default; set
+`remove_on_kick=False` to retry. Network/protocol failures and throttle kicks can be retried with
+jittered exponential backoff (`base_backoff`, `max_backoff`, `max_attempts`; `0` means unlimited).
 
 `stop()` is cancellation-safe: supervisors are cancelled, bots closed, chunk refs released, tick
 driver tasks cancelled and the cluster event bus closed. No tasks are left behind.
@@ -167,11 +161,10 @@ bot = Bot("Steve", world=shared_world, tick_driver=cluster_driver)
 
 ## Limitations
 
-- **M6 is not implemented.** `PathCache`, claims and roles are ready, but no planner/action scheduler
-  consumes them automatically. Coordinated mining requires the caller to claim, dig and release.
-- The 50-bot Paper soak, shared-memory benchmark and chaos test from the roadmap were not run in this
-  environment; `tests/test_swarm.py` covers three-bot FakeServer scenarios, refcounts, staggering,
-  claims, TTLs and failure isolation.
+- The cluster does not automatically connect claims to action scheduling or path planning. Callers
+  coordinate those operations using the exposed APIs.
+- Unit tests exercise selected cluster, reference-counting, staggering, coordination, and failure
+  scenarios; they do not establish large-fleet performance or live-server behavior.
 - Sharing assumes bots connect to the **same server and dimension**. `add_bot(host=…, port=…)` can
   point elsewhere, but then it should get its own registry/view.
 - `use_srv` defaults to `False` for clusters because a cluster targets one resolved address; enable

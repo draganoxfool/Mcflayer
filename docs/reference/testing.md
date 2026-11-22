@@ -1,5 +1,16 @@
 # `pyflayer.testing`
 
+Testing helpers exported by `pyflayer.testing`. `FakeClock` is in
+[`pyflayer._internal`](internal.md), not in this package.
+
+::: pyflayer.testing
+    options:
+      members: [FakeServer]
+      show_root_heading: false
+    show_root_toc_entry: false
+
+<!--
+
 Testing utilities: `FakeServer` for offline integration tests and `FakeClock` for deterministic
 time control.
 

@@ -1,5 +1,30 @@
 # `pyflayer.world`
 
+World storage, chunk and entity types, and read-only views.
+
+::: pyflayer.world
+    options:
+      members:
+        - BlockState
+        - Bounds
+        - ChunkColumn
+        - ChunkSection
+        - ChunkStore
+        - ContainerKind
+        - Entity
+        - EntityTracker
+        - PalettedContainer
+        - RayHit
+        - World
+        - WorldKey
+        - WorldSnapshot
+        - raycast
+        - section_index
+      show_root_heading: false
+      show_root_toc_entry: false
+
+    <!--
+
 World state is **immutable per section** and mutable per world. Servers send whole chunk columns and
 small block updates; the bot keeps the current dimension in `Bot.world`, entities in `Bot.entities`
 and inventory windows in `Bot.inventory`.

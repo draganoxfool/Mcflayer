@@ -1,5 +1,22 @@
 # `pyflayer.protocol.protodef`
 
+Compiler for packet schemas from Minecraft data, with native codecs where required.
+
+::: pyflayer.protocol.protodef
+    options:
+      members:
+        - Codec
+        - CompileReport
+        - Packet
+        - PacketCodec
+        - ProtocolCompiler
+      show_root_heading: false
+      show_root_toc_entry: false
+
+The version-scoped packet registry is exposed from [`pyflayer.protocol`](protocol.md).
+
+<!--
+
 The protodef compiler and packet registry. Converts `minecraft-data` protocol schemas into
 executable Python codecs for reading and writing packets.
 

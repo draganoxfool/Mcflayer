@@ -1,8 +1,7 @@
 # Commands (`pyflayer.ext.commands`)
 
-A discord.py-inspired command layer. It keeps the ergonomics that make bots pleasant to write —
-decorators, cogs, typed signatures, converters, checks, cooldowns, help — and drops everything that
-has no meaning in Minecraft.
+`pyflayer.ext.commands` provides chat-based command dispatch, decorators, cogs, argument conversion,
+checks, cooldowns, flags, and help. It is inspired by discord.py but is not a compatible port.
 
 !!! note "Optional prefixes, plus addressing"
     Pass `prefix="!"` to accept `!mine stone 8` in public chat. A chat line is also a command when
@@ -102,7 +101,8 @@ always uses public chat. Both go through the bot's `ChatQueue`, so replies are r
 
 ## Converters
 
-Resolution order: explicit `Annotated`/`Converter` → built-in map → `Literal`/enums → callable.
+Resolution order is explicit `Annotated`/converter, built-in converters, `Literal`/enums, then
+callable annotations.
 
 Built-ins: `str`, `int`, `float`, `bool`, `Dimension`, `GameMode`, `Player` (tab-list lookup),
 `Literal[...]`, `Optional[T]`, `Union[...]`, `Greedy[T]`, `Range[T, lo, hi]`, and `FlagConverter`
@@ -174,10 +174,9 @@ await bot.reload_extension("my_bot.features")
 await bot.unload_extension("my_bot.features")
 ```
 
-`load_extension` tracks everything registered during `setup` and rolls it back when setup raises.
-`reload_extension` is atomic: it unloads, purges the extension's `sys.modules` subtree, re-imports,
-and on failure restores the previous module, cogs and commands before raising `ExtensionFailed`.
-Twenty reload cycles leave no leaked subscriptions or commands.
+`load_extension` tracks registrations made during `setup` and rolls them back if setup raises.
+`reload_extension` replaces the module and restores the previous extension state if loading the
+replacement fails; failures are reported as `ExtensionFailed`.
 
 ## Flags
 
@@ -207,7 +206,3 @@ discord.py-compatible import aliases. See [Migrating from discord.py](../migrati
 
 ## Limitations
 
-- Command arguments come from chat text only; there is no interaction payload.
-- `tasks.loop(time=...)` is accepted for familiarity but not scheduled.
-- Public-chat addressing is token-based; plugin chat that rewrites names needs `trigger=`.
-- There is no permission hierarchy; use `is_owner`, `check`, and world checks.

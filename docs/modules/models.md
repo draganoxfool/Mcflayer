@@ -1,6 +1,6 @@
 # Models
 
-`pyflayer.models` contains pure, frozen value types: no I/O, no asyncio, no registries.
+`pyflayer.models` contains value types and structural protocols shared across package layers.
 
 ## Coordinates
 
@@ -16,13 +16,14 @@
 
 ## Other values
 
-- `AABB(min_x, …, max_z)` — intersection, containment, translation, expansion.
+- `AABB(min_x, min_y, min_z, max_x, max_y, max_z)` — intersection, containment, translation, and expansion.
 - `Dimension`, `GameMode`, `Face`, `Hand`, `Difficulty`, `Pose`, `ConnectionState`.
 - `ChatComponent` — parses a JSON string, mapping or list; flatten with `plain_text()`;
   translation keys can be supplied for tests and tooling.
 - `ItemStack(item_id, name, count, damage, nbt)` with `.empty`.
-- `models.protocols`: `WorldReader`, `ActionHost`, `PacketSink`, `Dispatcher`, `BlockMatcher`.
-  Upper layers depend on these, never on concrete classes (ADR-2).
+- `models.protocols` defines interfaces used by world, actions, packet, and dispatch code. These
+  protocols describe compatible object surfaces; they do not imply that every caller uses only
+  those abstractions.
 
 ## Chat example
 

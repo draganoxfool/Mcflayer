@@ -15,6 +15,9 @@ from __future__ import annotations
 from pyflayer.events.base import Event, event_name
 from pyflayer.events.bus import EventBus, Expectation, Subscription
 from pyflayer.events.catalog import (
+    ActionFinishedEvent,
+    ActionPreemptedEvent,
+    ActionStartedEvent,
     BlockUpdateEvent,
     ChatEvent,
     ChunkLoadEvent,
@@ -29,11 +32,15 @@ from pyflayer.events.catalog import (
     EntitySpawnEvent,
     ErrorEvent,
     ExperienceEvent,
+    GoalReachedEvent,
     HealthEvent,
     InventoryChangedEvent,
     JoinEvent,
     KickEvent,
     LoginEvent,
+    PathResetEvent,
+    PathStartedEvent,
+    PathUpdatedEvent,
     PhysicsTickEvent,
     PlayerInfoEvent,
     RespawnEvent,
@@ -42,6 +49,9 @@ from pyflayer.events.catalog import (
 )
 
 __all__ = [
+    "ActionFinishedEvent",
+    "ActionPreemptedEvent",
+    "ActionStartedEvent",
     "BlockUpdateEvent",
     "ChatEvent",
     "ChunkLoadEvent",
@@ -59,11 +69,15 @@ __all__ = [
     "EventBus",
     "Expectation",
     "ExperienceEvent",
+    "GoalReachedEvent",
     "HealthEvent",
     "InventoryChangedEvent",
     "JoinEvent",
     "KickEvent",
     "LoginEvent",
+    "PathResetEvent",
+    "PathStartedEvent",
+    "PathUpdatedEvent",
     "PhysicsTickEvent",
     "PlayerInfoEvent",
     "RespawnEvent",

@@ -1,5 +1,24 @@
 # `pyflayer.protocol.auth`
 
+Authentication API import path: `pyflayer.protocol.auth`.
+
+::: pyflayer.protocol.auth
+    options:
+      members:
+        - AuthProvider
+        - MicrosoftAuth
+        - OfflineAuth
+        - Session
+        - StaticAuth
+        - join_session
+        - offline_uuid
+        - server_hash
+        - validate_username
+      show_root_heading: false
+      show_root_toc_entry: false
+
+    <!--
+
 Authentication providers for Minecraft login: offline mode, Microsoft device flow, static
 sessions, and the Mojang session-server join.
 

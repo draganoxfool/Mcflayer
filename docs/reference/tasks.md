@@ -1,5 +1,15 @@
 # `pyflayer.ext.tasks`
 
+Recurring task API exports.
+
+::: pyflayer.ext.tasks
+    options:
+      members: [MISSING, Loop, loop]
+      show_root_heading: false
+      show_root_toc_entry: false
+
+    <!--
+
 Recurring coroutines aligned to wall time or physics ticks.
 
 ```python

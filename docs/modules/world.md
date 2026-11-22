@@ -78,20 +78,19 @@ A `map_chunk` with `groundUp=False` is merged into the existing column instead o
 
 ## Protocol coverage
 
-`protocol/native/chunk_data.py` decodes the 1.8 chunk payload (block states, block light, sky light,
-biomes, block entities). `protocol/native/entity_metadata.py` implements `entityMetadataLoop` as a
-native protodef codec, which completes the play state: every play/toClient and play/toServer packet
-compiles for 1.8.9. The registry maps the `slot` type to the native `ItemStack` codec for 1.8–1.20.4
-instead of exposing the JSON container's raw `blockId`/`itemCount` dict.
+`protocol/native/chunk_data.py` decodes 1.8 chunk payloads: block states, block light, optional sky
+light, and biomes. In 1.8, block entities arrive separately in `tile_entity_data` packets; the bot
+stores their NBT only when the corresponding column is loaded. `protocol/native/entity_metadata.py`
+implements the 1.8 `entityMetadataLoop` codec. Codec or data presence alone does not establish
+support for a different protocol version.
 
 ## Limitations
 
-- Only 1.8.9 data is vendored; modern paletted decode is tested synthetically, not against a live
-  modern server.
+- The repository vendors data for multiple versions, but that does not make every version's
+  connection, packet, world, or bot behavior supported. Modern paletted decode is exercised by
+  tests; live modern-server compatibility is not established here.
 - Chunk batch (`chunk_batch_start/finished`) is a 1.20.2+ flow and is not implemented.
 - `raycast`/`find_blocks` are queries only; M4 physics reads `collision_boxes`, and pathfinding is
   M6+.
 - Light arrays are stored but lighting is not recomputed client-side.
-- No Mineflayer oracle fixtures for chunk decode or the 441-column memory benchmark yet (M3
-  hardening).
-- Block entities are decoded from chunk data and exposed as raw NBT, not typed objects.
+- Block entities are exposed as raw NBT mappings, not typed objects.

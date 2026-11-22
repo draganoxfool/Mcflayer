@@ -1,8 +1,9 @@
 """PyFlayer: asyncio Minecraft Java Edition bot library.
 
 M1-M3 provide transport, login, events, a bot and world state; M4 adds deterministic physics, a
-20 TPS driver, movement packets and teleport reconciliation; M5 adds the command layer and M7
-adds multi-bot clusters with shared chunk storage. The reference target is
+20 TPS driver, movement packets and teleport reconciliation; M5 adds the command layer; M6 adds
+the action scheduler, A* pathfinding and built-in actions; M7 adds multi-bot clusters with shared
+chunk storage. The reference target is
 **Minecraft 1.8.9 (protocol 47)**;
 version-specific behaviour is feature-gated so newer versions can be added with data, not package
 rewrites. See ``docs/sessions.md`` and ``docs/tasks.md``.
@@ -58,7 +59,7 @@ from pyflayer.world import (
     WorldSnapshot,
 )
 
-__version__ = "0.9.0"
+__version__ = "1.1.1"
 PROTOCOL_VERSION = 47
 REFERENCE_VERSION = "1.8.9"
 

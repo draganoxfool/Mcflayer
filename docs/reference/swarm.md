@@ -1,5 +1,14 @@
 # `pyflayer.swarm`
 
+Multi-bot cluster, shared-world, coordination, and metrics exports.
+
+::: pyflayer.swarm
+    options:
+      show_root_heading: false
+      show_root_toc_entry: false
+
+    <!--
+
 Multi-bot clusters, shared worlds, login staggering, coordination and metrics (M7).
 
 ```python

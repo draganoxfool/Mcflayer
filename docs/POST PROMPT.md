@@ -1,4 +1,8 @@
-# PyFlayer Hardening Pass: correctness, speed, and latest-version scaling
+# Proposed Hardening Work
+
+This document is a proposal, not a record of implemented behavior. Its requirements are not part
+of the current API contract until implemented and verified. Current status is tracked in the
+[roadmap](ROADMAP.md) and [tasks](tasks.md).
 
 You are working on PyFlayer, a discord.py-inspired Minecraft bot framework in Python.
 The source of truth is docs/ARCHITECTURE.md — its ADRs override everything else, including this prompt where they conflict.

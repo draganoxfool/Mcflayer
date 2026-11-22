@@ -1,7 +1,7 @@
 # Data (`pyflayer.data`)
 
-`McData.load(version)` turns a `minecraft-data` checkout into one immutable snapshot. It is cached
-per `(version key, data directory)`.
+`McData.load(version, *, edition="pc")` loads a versioned snapshot from Minecraft data files. Loaded
+snapshots are cached by data key and data-directory path.
 
 ```python
 from pyflayer.data import McData
@@ -15,9 +15,10 @@ mc.shapes.boxes_for("stone")  # (AABB(0,0,0,1,1,1),)
 
 ## Data directory resolution
 
-1. `PYFLAYER_DATA_DIR` — a full `minecraft-data/data` checkout.
-2. `<repo>/data` — the vendored 1.8 subset in this repository.
-3. `./data`.
+1. `PYFLAYER_DATA_DIR` — a data directory containing `dataPaths.json`.
+2. The package's `_data` directory, when present.
+3. `<repo>/data`.
+4. `./data`.
 
 `dataPaths.json` is honoured, including the upstream nested-edition layout. Missing files raise
 `DataError`; an unknown version raises `UnsupportedVersion` with a short list of available versions.
@@ -33,8 +34,9 @@ mc.shapes.boxes_for("stone")  # (AABB(0,0,0,1,1,1),)
 | `EffectRegistry` | `id, name, display_name, kind` |
 | `FoodRegistry` | `id, name, display_name, stack_size, food_points, saturation, …` |
 
-All registries support `name`, `id`, `"minecraft:"` prefix stripping, `get(default)`, `in`,
-`names()`, `by_name()`, `by_id()`. Unknown lookups raise `MissingRegistryEntry`.
+Registries support `registry[name_or_id]`, `get(key, default=None)`, membership checks, `names()`,
+`by_name()`, and `by_id()`. String lookups are lower-cased and strip a leading `minecraft:`.
+Unknown indexed lookups raise `MissingRegistryEntry`; `get()` returns its default.
 
 ### Legacy block states (1.8)
 
@@ -45,10 +47,10 @@ state_id = mc.blocks.legacy_state_id(block.id, metadata)  # (block_id << 4) | me
 block, meta = mc.blocks.from_legacy_state_id(state_id)
 ```
 
-`Features.block_state_ids` is `False` for 1.8 and `True` for 1.13+. Modern global state tables
-(`minStateId`/`maxStateId`) are **not vendored yet**: only the 1.8 data set ships, so lookups use the
-legacy path above. `PalettedContainer` can decode modern chunk layouts, but the corresponding block
-registry data is still deferred.
+`Features.block_state_ids` is `False` for 1.8 and `True` for 1.13+. The repository includes data
+directories for 1.8, 1.20.4, and 26.1. Data being present does not imply that the protocol client,
+packet codecs, world decoder, or bot supports that version end to end. `PalettedContainer` decodes
+modern layouts, but its existence alone does not establish full modern chunk support.
 
 ## Shapes
 
@@ -60,9 +62,9 @@ mc.shapes.boxes_for("air")  # ()
 mc.collision_boxes(mc.blocks.state_id("stone"))
 ```
 
-`blocks` values in `blockCollisionShapes.json` may be a single shape id or a metadata-indexed list;
-both are supported. Modern state-id collision lookup needs `minStateId`/`maxStateId` ranges plus
-modern data and remains deferred.
+`blocks` values in `blockCollisionShapes.json` may be a single shape id or a metadata-indexed list.
+`McData.collision_boxes(state_id)` resolves through the loaded registry and shape table; the result
+depends on the data for the selected version.
 
 ## Features
 
@@ -81,5 +83,6 @@ Protocol code must ask flags (or read the version's schema) instead of comparing
 
 ## Versions
 
-`version_key("1.8.9") == "1.8"`, `protocol_for("1.8.9") == 47`,
-`version_for_protocol(47) == "1.8"`. Aliases map 1.8.x to the data key `1.8`.
+`version_key("1.8.9") == "1.8"`, `protocol_for("1.8.9") == 47`, and
+`version_for_protocol(47) == "1.8"`. `version_key()` normalizes selected aliases and otherwise
+returns a parseable version key; the loader reports when corresponding files are unavailable.

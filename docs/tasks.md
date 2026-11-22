@@ -1,20 +1,23 @@
 # Tasks
 
-Living backlog. `[x]` means implemented **and** covered by the current test suite; `[~]` means
-implemented but missing a roadmap gate (tooling, property tests, integration); `[ ]` means not
-started. See [Sessions](sessions.md) for the narrative log.
+Living backlog. `[x]` means implemented and covered by tests; `[~]` means implementation/tests exist
+but a roadmap validation gate remains; `[ ]` means not started. See [Sessions](sessions.md) for the
+dated development record.
 
-## Completed: M1 (transport/data/codecs), M2 (login/auth/events/bot), M3 (world state), M4
-(physics/movement), M5 (commands/tasks), M7 (swarm)
+## Implemented: M1 (transport/data/codecs), M2 (login/auth/events/bot), M3 (world state), M4
+(physics/movement), M5 (commands/tasks), M6 (pathfinder/actions), M7 (swarm)
 
 Reference target: **1.8.9 / protocol 47**. M3 is covered by the test suite and verified live on
 PikaNetwork. **M4 is implemented and covered by the test suite:** deterministic physics, oracle
 differential traces, bot-owned 20 TPS ticks, movement packet cadence, sprint/sneak actions and
 teleport reconciliation. The live 10-minute vanilla/Paper anti-cheat soak has not been run here.
-**M7 is implemented and covered by the test suite:** shared refcounted chunk stores/views, tick
-groups, throttle-aware login staggering, cluster supervision, claims, blackboard, path cache and
-metrics. M6 (pathfinder/actions) is still design-only; the 50-bot Paper soak and memory benchmark
-have not been run here.
+**M6 implementation and unit tests are present:** the scheduler, built-in actions, snapshot-based
+async planner, goals/executor, health-triggered eating monitor, and action/path events. Its roadmap
+live scenarios, replan and survival-interruption scenarios, and 50k-node p99 benchmark remain
+unverified. **M7 implementation and unit tests shipped in 1.0.0:** shared chunk stores/views, tick
+groups, login staggering, cluster supervision, coordination primitives and metrics. The 50-bot
+Paper soak, shared-memory and tick-budget benchmarks remain unrun; those are not implied by the
+shipped implementation.
 
 ### Scaffolding and policy
 
@@ -162,7 +165,34 @@ have not been run here.
 - [ ] `tasks.loop(time=...)` scheduling and reconnect pausing (deferred).
 - [ ] Loop/listener cost benchmark (not required by the gate that ran here).
 
-## M7 — Multi-bot swarm and shared world (done, 0.9.0)
+## M6 — Pathfinder and actions (implementation present, roadmap gates outstanding)
+
+- [x] `Action`/`ActionHandle`/`Lease` with `Resource` bits, `Priority`, `OnPreempt` and
+      `ActionState`; action movement and look writes use the lease control surface. Direct Bot
+      movement methods remain available separately.
+- [x] `ActionScheduler`: all-or-nothing resource acquisition, busy/queue behaviour, cooperative
+      preemption with `ABORT`/`RESUME`/`REQUEUE`, checkpoints, critical sections, timeouts on the
+      injected clock, death barrier, inherited child actions, metrics and cancellation.
+- [x] Built-in actions `Look`, `LookAt`, `Equip`, `Eat`, `Dig`, `Place`, `Attack`, `GoTo` and the
+      `bot.actions` facade; equip supports hotbar selection and main-inventory clicks.
+- [x] `PathPlanner` snapshots the world and runs A* through `run_cpu`; `Path`/`PathSearchResult`,
+      node budget with best partial path and optional `swarm.PathCache` support.
+- [x] Goals: `GoalBlock`, `GoalNear`, `GoalXZ`, `GoalY`, `GoalGetToBlock`, `GoalFollow`,
+      `GoalCompositeAny`, `GoalCompositeAll`, `GoalInvert`, `GoalLookAt`.
+- [x] Pure A* with deterministic tie-breaking, flat/diagonal/jump/climb/fall costs, hazard and
+      support checks, corner-cut prevention and unknown-state safety.
+- [x] `PathExecutor`: per-tick look/move/sprint/jump through the lease, reach tolerance, stuck and
+      per-node caps, `PathStarted`/`PathUpdated`/`PathReset`/`GoalReached` events.
+- [x] `SurvivalMonitor` eats at `SURVIVAL` priority; bot wiring starts it on join and the scheduler
+      applies a death barrier and cleanup on close/disconnect.
+- [x] `commands.requires_idle()`; action/path events exported from `pyflayer.events`.
+- [x] `tests/test_pathfinder.py` (7 tests) and `tests/test_actions.py` (14 tests).
+- [x] Docs: `modules/actions.md`, `modules/pathfinding.md`, reference pages, `handoff/M6.md`.
+- [ ] Roadmap validation: 100+ block mixed-terrain live traversal, block-change replan, and
+      survival interruption/resume scenarios. These have not been run.
+- [ ] Docker Paper action scenarios and 50k-node search p99 benchmark. These have not been run.
+
+## M7 — Multi-bot swarm and shared world (implementation shipped in 1.0.0)
 
 - [x] `Bot(world=..., tick_driver=...)` injection, `Bot.physics_tick()`, `Bot.closed`.
 - [x] `SharedWorldRegistry` / `SharedWorld`: one refcounted `ChunkStore` per `(server, dimension)`,
@@ -188,15 +218,15 @@ have not been run here.
 - [ ] Shared Microsoft token cache / injected `httpx.AsyncClient` (online auth remains untested).
 - [ ] Chaos/soak leak tests and a real two-server cluster.
 
-## M4–M7 (summary from the roadmap)
+## M4–M7 Status
 
 - [~] M4: implementation and test gates complete; the live vanilla/Paper anti-cheat soak remains.
 - [x] M5: discord.py-inspired `ext.commands` / `ext.tasks` with **no** `command_prefix`, atomic
       extension reload, help, converters, checks, cooldowns.
-- [ ] M6: action scheduler with leases/preemption, non-blocking A*, executor, Dig/Place/Equip/Eat/
-      Attack/Look/GoTo, SurvivalMonitor, inventory transactions.
-- [~] M7: `BotCluster`, shared `ChunkStore`, staggered logins, shared tick groups, claims and
-      metrics are implemented; the live 50-bot soak and benchmarks remain.
+- [~] M6: implementation and unit tests exist; live traversal, replan/survival scenarios and the
+      50k-node p99 benchmark remain outstanding. Inventory clicks are not transactional.
+- [~] M7: implementation shipped in 1.0.0 and is unit-tested; the live 50-bot soak and resource
+      benchmarks remain outstanding.
 
 
 ## Known limitations (current code)
@@ -207,16 +237,17 @@ have not been run here.
 - Microsoft auth is implemented but not exercised against a live account.
 - Chat is unsigned; 1.19.1+ `enforce-secure-profile` servers will reject it when they are supported.
 - Light data is stored but not recomputed client-side.
-- Physics is bot-owned and packet-emitting; pathfinding remains M6+. Effects, attributes, flight
-  and elytra are not fed into the engine, and server velocity packets for the local player are not
-  applied.
+- Physics is bot-owned and packet-emitting. Actions and pathfinding use the lease control surface,
+      but direct Bot movement methods remain available. Effects, attributes, flight and elytra are not
+      fed into the engine, and server velocity packets for the local player are not applied.
 - The 10-minute anti-cheat soak against vanilla/Paper has not been executed here.
 - The bot pauses physics while its current chunk is unloaded instead of falling through terrain.
 - The protocol compiler treats unknown **mapper** values as raw integers and unknown **types** as
   hard `UnsupportedType` errors (never silent corruption).
 - `FakeClock.advance()` wakes sleepers but does not run tasks; use `advance_async()`.
-- M6 is not implemented, so swarm claims, roles and the path cache are primitives for callers;
-  no action scheduler consumes them and no planner fills the cache.
+- M6 does not claim swarm resources automatically: claims, roles and the path cache remain
+      primitives callers combine with actions. Live action scenarios and the 50k-node p99 benchmark
+      were not run here.
 - The M7 50-bot Paper soak, shared-memory benchmark and tick-budget benchmark were not run here.
 - Cluster auth is per bot; Microsoft tokens and the HTTP client are not shared across the swarm.
 - The SLP CLI prints to stdout (the one allowed non-library `print`).

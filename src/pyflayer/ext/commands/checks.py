@@ -33,6 +33,7 @@ __all__ = [
     "in_dimension",
     "is_owner",
     "max_concurrency",
+    "requires_idle",
 ]
 
 
@@ -97,6 +98,16 @@ def in_dimension(*dimensions: int) -> Callable[[Callable[..., Any]], Callable[..
 
     async def predicate(ctx: Any) -> bool:
         return ctx.bot.dimension in dimensions
+
+    return check(predicate)
+
+
+def requires_idle() -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Only allow the command when no action is running (avoids fighting the scheduler)."""
+
+    async def predicate(ctx: Any) -> bool:
+        scheduler = getattr(ctx.bot, "scheduler", None)
+        return scheduler is None or scheduler.idle
 
     return check(predicate)
 

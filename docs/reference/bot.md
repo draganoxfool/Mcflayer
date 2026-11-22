@@ -1,5 +1,32 @@
 # `pyflayer.bot`
 
+Bot composition root and its package-level exports. `BotState` and `PlayerInfo` are available from
+`pyflayer.bot`, not from the top-level `pyflayer` package.
+
+::: pyflayer.bot
+    options:
+      members:
+        - Bot
+        - BotState
+        - ChatQueue
+        - PlayerInfo
+        - parse_chat_json
+        - split_message
+      show_root_heading: false
+      show_root_toc_entry: false
+
+::: pyflayer.bot.bot.Bot
+    options:
+      members:
+        - connect
+        - run
+        - close
+        - chat
+        - send_command
+        - wait_until_ready
+
+      <!--
+
 The composition root: a `ProtocolClient` plus an `EventBus`, with player, world, entity, inventory
 and physics state.
 

@@ -49,6 +49,8 @@ nav:
       - Bot: modules/bot.md
       - World: modules/world.md
       - Physics: modules/physics.md
+      - Pathfinding: modules/pathfinding.md
+      - Actions: modules/actions.md
       - Commands: modules/commands.md
       - Tasks: modules/tasks.md
       - Swarm: modules/swarm.md
@@ -66,6 +68,8 @@ nav:
       - Bot: reference/bot.md
       - World: reference/world.md
       - Physics: reference/physics.md
+      - Pathfinding: reference/pathfinding.md
+      - Actions: reference/actions.md
       - Testing: reference/testing.md
       - CLI: reference/cli.md
       - Commands: reference/commands.md
@@ -85,6 +89,7 @@ nav:
           - M3: handoff/M3.md
           - M4: handoff/M4.md
           - M5: handoff/M5.md
+          - M6: handoff/M6.md
           - M7: handoff/M7.md
 
 markdown_extensions:

@@ -1,8 +1,7 @@
 # Physics
 
-`pyflayer.physics` is a deterministic, side-effect-free simulation of a Minecraft Java player. It
-reads only block queries from the world and never sends packets, so the same step can run inside the
-bot loop, a test with `FakeClock`, or a worker thread over a `WorldSnapshot`.
+`pyflayer.physics` provides a step-based simulation of a Minecraft Java player. `PhysicsEngine.step`
+reads block collision data and returns a new player state; packet I/O is handled by the bot layer.
 
 The module was added in M4. The bot wires it to a [`TickDriver`](#class-tickdriver) and to vanilla-style
 movement packets; that integration is documented in [Bot → Movement](bot.md#movement-and-physics).
@@ -83,8 +82,8 @@ PlayerState(
 )
 ```
 
-Immutable input and output of one tick. `PhysicsEngine.step()` returns a **new** `PlayerState`; it
-never mutates the one passed in, which makes snapshotting and replay cheap.
+Immutable input and output of one tick. `PhysicsEngine.step()` returns a new `PlayerState` rather
+than changing the supplied state.
 
 **Attributes**
 
@@ -155,8 +154,8 @@ The order of operations follows vanilla `LivingEntity.travel`:
 7. Apply liquid drag or gravity + air drag + ground friction.
 8. Sample the medium at the new position and return a new `PlayerState`.
 
-**Raises:** nothing for ordinary world gaps. Unloaded chunks are treated as air by
-`World.collision_boxes()`; the bot separately stops simulating when its own chunk is not loaded.
+**World gaps:** `World.collision_boxes()` returns an empty tuple for unloaded or out-of-bounds blocks.
+The bot separately skips simulation when its current chunk is not loaded.
 
 **Example — measure terminal walk speed:**
 
@@ -201,11 +200,6 @@ inject `FakeClock` to make the loop deterministic.
 **Catch-up policy.** If the loop is more than `max_catch_up` intervals behind, it keeps the newest
 `max_catch_up` ticks and **drops** the rest, resynchronizing to the wall clock. A stalled event loop
 therefore cannot burst a long run of movement packets, which is what triggers “moved too quickly”.
-
-!!! note "Jitter measured on this machine"
-    A 100-tick idle run with `MonotonicClock` measured **19.994 TPS** with **p99 jitter 0.83 ms**,
-    **0 dropped ticks** and **0 catch-up ticks** (roadmap gate: p99 < 5 ms). The exact number depends
-    on the host; `TickDriver.jitter_p99_ms` reports it for your own deployment.
 
 **Cancellation.** `run()` is cancellation-safe: `FakeClock.pending` returns to zero after a cancelled
 driver. The bot calls `driver.stop()` and cancels its task in `Bot.close()`.
@@ -262,8 +256,8 @@ multiplier `0.3`, and ground friction `slipperiness * 0.91`.
 
 ## Fidelity to vanilla 1.8.9
 
-The trace suite compares against `prismarine-physics` 1.11.1 with `minecraft-data` 3.75.0, the engine
-Mineflayer uses. Ten scripted 20-tick courses are recorded on a flat 1.8.9 world:
+The physics tests include reference traces generated with `prismarine-physics` and `minecraft-data`,
+along with direct collision/media cases. The documented trace cases cover:
 
 | Trace | What it checks |
 |---|---|
@@ -278,8 +272,8 @@ Mineflayer uses. Ten scripted 20-tick courses are recorded on a flat 1.8.9 world
 | `water` | Water drag and buoyancy. |
 | `lava` | Lava drag and buoyancy. |
 
-Every trace matches position, `on_ground`, `in_water` and `in_lava` within **`1e-6` per tick**. The
-fixture records positions rounded to `1e-9`; regenerate it with the pinned packages:
+Trace fixtures compare position and selected state fields. Fixture generation uses the pinned
+packages in the oracle tool directory:
 
 ```bash
 cd tools/mineflayer_oracle
@@ -323,8 +317,8 @@ These are intentional and recorded against vanilla `LivingEntity.travel`; none a
 - **Flight and elytra.** Player abilities and elytra physics are not implemented.
 - **Liquid exit impulse and bubble columns.** Entering/leaving a liquid uses drag and buoyancy only;
   bubble columns and the `0.3` out-of-liquid impulse are deferred.
-- **Anti-cheat soak.** The code and unit gates are complete, but the roadmap's 10-minute scripted
-  run on vanilla/Paper is a live-server check and has not been executed in this environment.
+- **Anti-cheat soak.** A scripted live-server run against vanilla/Paper is not established by the
+  unit tests.
 
 The bot-side packet cadence and teleport reconciliation are documented in
 [Bot → Movement and physics](bot.md#movement-and-physics); the remaining backlog is in

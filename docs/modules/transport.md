@@ -61,10 +61,10 @@ async with await Connection.open("play.example.org") as conn:
 ```
 
 - `asyncio.open_connection`, `TCP_NODELAY`, `drain()` backpressure, a single write lock.
-- `resolve_address` looks up `_minecraft._tcp.<host>` via `dnspython` (SRV is used only when the port
-  is the default), falling back to the literal host on any failure.
-- Reads and writes decrypt/frame automatically once enabled; a write after close raises
-  `ConnectionClosed`, not `AttributeError`.
+- `resolve_address` attempts `_minecraft._tcp.<host>` lookup when SRV is enabled and the port is the
+  default, then falls back to the original host and port if lookup fails.
+- Reads and writes decrypt/frame automatically once enabled. A write to a closing connection raises
+  `ConnectionClosed`.
 - `read_timeout` is applied per frame with `asyncio.timeout`.
 
 ## Server List Ping
@@ -89,8 +89,8 @@ measured with the injected `Clock`.
 ### Limitations
 
 - Legacy (pre-1.7) `0xFE` server list ping is not implemented; 1.8.9 supports modern SLP.
-- SRV weighting uses priority then highest weight; vanilla's exact weighted-random selection is not
-  reproduced.
+- SRV records are ordered by priority and then descending weight; this is not the DNS SRV
+  weighted-random selection algorithm.
 - SRV resolution runs in a worker thread via `asyncio.to_thread` (sync DNS API).
 
 ## Tests

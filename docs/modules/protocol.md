@@ -19,7 +19,7 @@ decode_varint(b"\xac\x02")  # (300, 2)
 
 ## PacketReader / PacketWriter
 
-`PacketReader` is a bounds-checked `memoryview` cursor; `PacketWriter` builds bytes.
+`PacketReader` is a bounds-checked cursor over a `memoryview`; `PacketWriter` accumulates bytes.
 
 ```python
 from pyflayer.protocol import PacketReader, PacketWriter
@@ -36,8 +36,9 @@ assert r.read_position() == BlockPos(1, 64, -3)
 r.ensure_finished()  # strict by default
 ```
 
-Primitives: `u8/i8/u16/i16/u32/i32/u64/i64/f32/f64`, `bool`, VarInt/VarLong, strings, UUID, packed
-position, NBT, slots, BitSet, plus `read_optional`/`read_array` for protodef.
+Reader/writer primitives include fixed-width integers and floats, booleans, VarInt/VarLong, strings,
+UUIDs, packed positions, NBT, slots, and BitSets. `PacketReader` additionally provides
+`read_optional(reader)` and `read_array(reader, count=None)` for protodef codecs.
 
 ### Strings
 
@@ -72,16 +73,17 @@ Supported tags: Byte, Short, Int, Long, Float, Double, ByteArray, String, List, 
 LongArray. Two roots:
 
 ```python
-from pyflayer.protocol.types.nbt import read_named_nbt, read_unnamed_nbt, write_named_nbt
+from pyflayer.protocol import PacketReader
+from pyflayer.protocol.types.nbt import NBTNamed, read_named_nbt, read_unnamed_nbt, write_named_nbt
 
 raw = write_named_nbt("root", {"Level": 1, "Items": [...]})
-named = read_named_nbt(PacketReader(raw))
+named: NBTNamed = read_named_nbt(PacketReader(raw))
 ```
 
 - Classic named root for 1.8.9; nameless network root for 1.20.2+ (`Features` decides).
-- Lists keep their element tag type (`NBTList(tag_type, items)`) so an empty list can be round-tripped.
+- Lists use `NBTList(tag_type, items)` so the element type of an empty list can be represented.
 - Compounds are `dict[str, object]`; int/long arrays are tuples; byte arrays are `bytes`.
-- Depth limit 512 and negative/oversized lengths are rejected before allocation.
+- NBT nesting is bounded; negative array/list lengths and malformed tags raise `MalformedPacket`.
 - NBT names and string payloads use Java Modified UTF-8, including its UTF-16-code-unit handling
   for supplementary characters. Ordinary protocol strings use their separate standard UTF-8 codec.
 
@@ -92,6 +94,4 @@ BitSets are a VarInt count of big-endian 64-bit longs; the read limit defaults t
 
 ## Tests
 
-`tests/test_varint.py`, `tests/test_buffer.py`, `tests/test_nbt.py` cover golden vectors, negatives,
-5/10-byte limits, split reads, astral strings, overlong UTF-8, position boundaries, slot variants,
-depth bombs and strict trailing-byte handling.
+Relevant tests are in `tests/test_varint.py`, `tests/test_buffer.py`, and `tests/test_nbt.py`.

@@ -1,7 +1,8 @@
 # Errors
 
-`pyflayer.errors` is the only place library exceptions are defined (ADR-10). Every error derives
-from `PyFlayerError` and carries structured fields, so callers never parse messages.
+`pyflayer.errors` defines the package exception hierarchy. Its exceptions derive from
+`PyFlayerError` and expose a `fields` mapping for additional context; APIs may also raise built-in
+exceptions for invalid arguments and runtime misuse.
 
 ```
 PyFlayerError
@@ -33,12 +34,11 @@ PyFlayerError
 
 ## Behaviour
 
-- Errors are import-safe from every layer; `errors` is the bottom of the dependency graph.
-- `MalformedPacket` always includes the reader offset when known, which makes fuzz failures
-  reproducible.
-- `UnknownPacket` retains the **raw payload after the packet id**. M1 never treats an unknown packet
-  as fatal; the policy is the connection state machine's decision in M2.
-- `CompressionError` distinguishes a lying length prefix, a zlib bomb, and trailing zlib data.
+- `MalformedPacket` may include an `offset`, packet name, and codec-specific context when available.
+- `UnknownPacket` carries `packet_id` and the raw packet body after the id. Whether an unknown
+  packet is skipped or rejected depends on the caller and protocol state.
+- `CompressionError` is used for invalid compressed lengths, malformed/truncated zlib streams, and
+  output that does not match the declared size.
 
 ## Example
 
@@ -48,9 +48,9 @@ from pyflayer.errors import MalformedPacket, ProtocolError
 try:
     reader.read_varint()
 except ProtocolError as exc:
-    print(exc.fields)  # {'offset': 3}
+  print(exc.fields.get("offset"))
 ```
 
 !!! note "Known limitation"
-    `FakeClock.advance()` raises a plain `ValueError` because it is a test helper, not library
-    behaviour. No library code path raises built-in exceptions.
+    Not every error condition uses a `PyFlayerError` subclass. For example, invalid values in
+    constructors or helper arguments can raise `ValueError` or `TypeError`.

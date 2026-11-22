@@ -25,6 +25,7 @@ from pyflayer.ext.commands.checks import (
     in_dimension,
     is_owner,
     max_concurrency,
+    requires_idle,
 )
 from pyflayer.ext.commands.cog import Cog, CogMeta, listener
 from pyflayer.ext.commands.context import Context
@@ -110,5 +111,6 @@ __all__ = [
     "listener",
     "max_concurrency",
     "parse_flags",
+    "requires_idle",
     "tokenize",
 ]

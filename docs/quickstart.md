@@ -1,6 +1,7 @@
 # Quickstart
 
-Install the package and join a Minecraft Java server in a few lines.
+Install `mcflayer` and connect a bot to a Minecraft Java server. The current reference target is
+Java Edition 1.8.9 (protocol 47); newer protocol support is incomplete.
 
 ```bash
 python3 -m venv .venv
@@ -20,8 +21,8 @@ python -m pyflayer.protocol.status play.example.org
 python -m pyflayer.cli play.pika-network.net --username Steve --timeout 15 --chat hello
 ```
 
-`--timeout` is the number of seconds to stay connected after joining. A leading `/` in `--chat`
-sends a command instead of public chat.
+`--timeout` is the number of seconds to remain connected after joining. A leading `/` in `--chat`
+sends a server command rather than public chat.
 
 ## Run a bot
 
@@ -50,14 +51,13 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-`bot.connect()` returns after Join Game; spawn position and tab-list packets arrive while
-`bot.run()` is reading. Use `bot.wait_for(SpawnEvent)` or the `on_spawn` handler before relying on
-`bot.position`.
+`bot.connect()` returns after Join Game. Spawn position and tab-list updates arrive while
+`bot.run()` reads packets. Wait for `SpawnEvent` before relying on `bot.position`.
 
 ## Next steps
 
-- [Bot guide](modules/bot.md) — state, chat, movement and PikaNetwork notes.
-- [Commands](modules/commands.md) — address-based dispatch, cogs and checks.
-- [Events](modules/events.md) — waiters, streams and the event catalog.
-- [API reference](reference/index.md) — exact signatures for every public module.
-- `examples/` in the repository — runnable physics, commands and PikaNetwork demos.
+- [Bot guide](modules/bot.md): connection, state, chat and movement.
+- [Commands](modules/commands.md): command dispatch, cogs and checks.
+- [Events](modules/events.md): waiters, streams and event types.
+- [API reference](reference/index.md): public signatures.
+- Repository `examples/`: runnable physics, commands and server examples.

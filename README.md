@@ -2,64 +2,49 @@
 
 # ⛏️ mcflayer
 
-### Mineflayer's brain. discord.py's soul. Pure asyncio.
+### Asyncio library for Minecraft Java Edition bots
 
-**An asyncio Minecraft Java Edition bot library that speaks fluent protocol and commands like a Discord bot.**
+mcflayer provides protocol, world, physics, action, command, and multi-bot APIs. Its documented
+reference target is Minecraft 1.8.9 (protocol 47); this does not imply support for every protocol
+version represented in the vendored data.
 
 [![PyPI](https://img.shields.io/badge/pypi-mcflayer-blue?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/mcflayer/)
-[![Python](https://img.shields.io/badge/python-3.10+-yellow?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Python](https://img.shields.io/badge/python-3.11+-yellow?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Minecraft](https://img.shields.io/badge/minecraft-1.8.9-green?style=for-the-badge)](#)
 [![Protocol](https://img.shields.io/badge/protocol-47-orange?style=for-the-badge)](#)
 [![Docs](https://img.shields.io/badge/docs-MkDocs_Material-purple?style=for-the-badge)](#documentation)
 
-`pip install mcflayer` → `import pyflayer`
+Install the `mcflayer` distribution and import `pyflayer`.
 
 </div>
 
 ---
 
-## ✨ Why mcflayer?
-
-You know **Mineflayer**: battle-tested protocol, world and physics.
-You know **discord.py**: the cleanest command framework around.
-
-**mcflayer fuses them.** Write Minecraft bots the way you write Discord bots: cogs, converters, checks, flags, auto-generated help, hot-reloadable extensions. All on `asyncio`, fully typed.
-
-```python
-# the vibe (see examples/ for runnable demos)
-@bot.command()
-async def follow(ctx, player: Player): ...
-```
-
----
-
-## 🚀 Features
+## Features
 
 | | |
 |---|---|
-| 🔌 **Transport & Auth** | Login, encryption, and a clean event system |
-| 🌍 **World Awareness** | Chunks, blocks, entities, inventory |
-| 🏃 **Deterministic Physics** | Drift-compensated **20 TPS** loop, vanilla movement-packet cadence, sprint/sneak `entity_action`, teleport confirmation |
-| 🎮 **Command Layer** | Optional prefixes or address-based dispatch. Cogs, converters, checks, flags, help, **atomic extension reload**, and `tasks.loop` locked to physics ticks |
-| 🐝 **Swarm** | Multi-bot clusters with shared chunk storage, tick groups, staggered logins, block/region claims, a blackboard and Prometheus-style metrics |
-| 🧪 **Tested** | Unit, golden, and loopback tests, plus live verification on PikaNetwork |
+| **Transport and authentication** | Connection, framing, encryption, status, and authentication components |
+| **World state** | Chunk, block, entity, and inventory models for the implemented reference target |
+| **Physics and actions** | Physics tick driver, collision, pathfinding, and scheduled bot actions |
+| **Commands and tasks** | discord.py-inspired commands, cogs, extensions, and scheduled tasks |
+| **Swarm** | Multi-bot clusters, shared chunk storage, login staggering, coordination, and metrics |
+| **Verification** | Unit, golden, and loopback tests; live validation remains subject to roadmap gates |
 
 ---
 
 ## 🗺️ Roadmap
 
-Built against **Minecraft 1.8.9 / protocol 47**.
+Reference target: **Minecraft 1.8.9 / protocol 47**. The vendored `minecraft-data` files are a
+subset and do not, by themselves, indicate protocol or feature support.
 
 | Milestone | Scope | Status |
 |:---:|---|:---:|
-| **M1** | Transport, login/auth | ✅ Live-verified on PikaNetwork |
-| **M2** | Events, bot core | ✅ Live-verified |
-| **M3** | Chunks, blocks, entities, inventory | ✅ Live-verified |
-| **M4** | Physics and movement | ✅ Implemented |
-| **M5** | Commands and tasks | ✅ Implemented |
-| **Gate** | 10-minute anti-cheat soak on live vanilla/Paper | 🔜 Environment-dependent |
-| **M6** | Pathfinding and actions | 🛠️ Planned |
-| **M7** | Swarm and shared worlds | ✅ Implemented |
+| **M1–M3** | Transport, bot core, and world state | Implemented; see roadmap for verification status |
+| **M4–M5** | Physics, movement, commands, and tasks | Implemented |
+| **M6** | Pathfinding and actions | Implemented; roadmap validation gates remain outstanding |
+| **M7** | Swarm and shared worlds | Implemented; live soak deferred |
+| **Gate** | Live vanilla/Paper anti-cheat soak | Environment-dependent |
 
 📓 Dig deeper: [Session log](docs/sessions.md) · [Task board](docs/tasks.md)
 
@@ -71,7 +56,7 @@ Built against **Minecraft 1.8.9 / protocol 47**.
 pip install mcflayer
 ```
 
-> 💡 **Heads up:** the PyPI distribution is **`mcflayer`** (the `pyflayer` name was taken), but the import stays **`pyflayer`**:
+The PyPI distribution is **`mcflayer`**; the import package is **`pyflayer`**:
 > ```python
 > import pyflayer
 > ```
