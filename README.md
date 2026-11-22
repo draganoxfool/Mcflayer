@@ -41,6 +41,7 @@ async def follow(ctx, player: Player): ...
 | 🌍 **World Awareness** | Chunks, blocks, entities, inventory |
 | 🏃 **Deterministic Physics** | Drift-compensated **20 TPS** loop, vanilla movement-packet cadence, sprint/sneak `entity_action`, teleport confirmation |
 | 🎮 **Command Layer** | Optional prefixes or address-based dispatch. Cogs, converters, checks, flags, help, **atomic extension reload**, and `tasks.loop` locked to physics ticks |
+| 🐝 **Swarm** | Multi-bot clusters with shared chunk storage, tick groups, staggered logins, block/region claims, a blackboard and Prometheus-style metrics |
 | 🧪 **Tested** | Unit, golden, and loopback tests, plus live verification on PikaNetwork |
 
 ---
@@ -57,8 +58,8 @@ Built against **Minecraft 1.8.9 / protocol 47**.
 | **M4** | Physics and movement | ✅ Implemented |
 | **M5** | Commands and tasks | ✅ Implemented |
 | **Gate** | 10-minute anti-cheat soak on live vanilla/Paper | 🔜 Environment-dependent |
-| **M6** | Pathfinding | 🛠️ Planned |
-| **M7** | Swarm | 🛠️ Planned |
+| **M6** | Pathfinding and actions | 🛠️ Planned |
+| **M7** | Swarm and shared worlds | ✅ Implemented |
 
 📓 Dig deeper: [Session log](docs/sessions.md) · [Task board](docs/tasks.md)
 
@@ -104,7 +105,7 @@ src/pyflayer/   🧠 library code (src layout, fully typed)
 data/pc/1.8/    📚 vendored subset of PrismarineJS/minecraft-data (MIT)
 tests/          🧪 unit, golden and loopback tests
 docs/           📖 MkDocs site: architecture, roadmap, prompts, modules, sessions, tasks
-examples/       🎯 runnable demos, including M4 physics and M5 commands
+examples/       🎯 runnable demos, including M4 physics, M5 commands and M7 swarm
 ```
 
 ---
