@@ -6,7 +6,7 @@ Legacy (pre-1.13) block state ids are ``(block_id << 4) | metadata`` helpers, no
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
@@ -52,7 +52,7 @@ class Registry(Generic[T]):
             self._by_name.setdefault(name, entry)
             self._by_id.setdefault(entry_id, entry)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[T]:
         return iter(self._entries)
 
     def __len__(self) -> int:
@@ -119,6 +119,9 @@ class Block:
     emit_light: int
     filter_light: int
     bounding_box: str
+    min_state_id: int = 0
+    max_state_id: int = 0
+    default_state_id: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,7 +181,7 @@ class Food:
     name: str
     display_name: str
     stack_size: int
-    food_points: int
+    food_points: float
     saturation: float
     effective_quality: float
     saturation_ratio: float
@@ -197,22 +200,80 @@ def _block(entry: BlockJson) -> Block:
         emit_light=entry.emitLight,
         filter_light=entry.filterLight,
         bounding_box=entry.boundingBox,
+        min_state_id=entry.minStateId or 0,
+        max_state_id=entry.maxStateId or 0,
+        default_state_id=entry.defaultState or 0,
     )
 
 
 class BlockRegistry(Registry[Block]):
-    """Block registry with legacy state helpers for pre-1.13 versions."""
+    """Block registry with legacy and modern global-state lookup.
 
-    __slots__ = ("_by_legacy_id",)
+    Pre-1.13 state ids are ``(block_id << 4) | metadata``. 1.13+ assigns every block property
+    combination a contiguous global id; this registry indexes those ranges so a decoded chunk state
+    resolves to the right block without a per-block JSON scan.
+    """
 
-    def __init__(self, entries: Iterable[Block]) -> None:
+    __slots__ = ("_by_legacy_id", "_by_state", "_modern")
+
+    def __init__(self, entries: Iterable[Block], *, modern: bool = False) -> None:
         super().__init__(entries)
         self._by_legacy_id = {block.id: block for block in self._entries}
+        self._modern = modern
+        self._by_state: tuple[Block | None, ...] = ()
+        if modern and self._entries:
+            size = max(block.max_state_id for block in self._entries) + 1
+            table: list[Block | None] = [None] * size
+            for block in self._entries:
+                for state_id in range(block.min_state_id, block.max_state_id + 1):
+                    table[state_id] = block
+            self._by_state = tuple(table)
 
     @classmethod
     def from_json(cls, entries: Iterable[BlockJson]) -> BlockRegistry:
         """Build from decoded ``blocks.json`` entries."""
-        return cls(_block(entry) for entry in entries)
+        decoded = list(entries)
+        modern = any(entry.minStateId is not None for entry in decoded)
+        return cls((_block(entry) for entry in decoded), modern=modern)
+
+    @property
+    def modern(self) -> bool:
+        """True for a 1.13+ global block-state registry."""
+        return self._modern
+
+    def from_state_id(self, state_id: int) -> tuple[Block, int]:
+        """Resolve a global block-state id to ``(block, metadata)``.
+
+        For modern data ``metadata`` is the offset inside the block's state range. Legacy 1.8 state
+        ids keep their original ``(block_id << 4) | meta`` meaning.
+        """
+        state_id = int(state_id)
+        if self._modern:
+            if 0 <= state_id < len(self._by_state):
+                block = self._by_state[state_id]
+                if block is not None:
+                    return block, state_id - block.min_state_id
+            raise MissingRegistryEntry(
+                f"no block for state id {state_id}", registry="blocks", key=state_id
+            )
+        return self.from_legacy_state_id(state_id)
+
+    def block_for_state(self, state_id: int) -> Block | None:
+        """Block for a global state id, or ``None`` when unknown/legacy."""
+        if not self._modern or not 0 <= int(state_id) < len(self._by_state):
+            return None
+        return self._by_state[int(state_id)]
+
+    def state_range(self, name: str) -> tuple[int, int]:
+        """Inclusive global state-id range for a block name.
+
+        Legacy data has no global table, so the range is the block's legacy base state.
+        """
+        block = self[name]
+        if self._modern:
+            return block.min_state_id, block.max_state_id
+        base = self.legacy_state_id(block.id)
+        return base, base
 
     def legacy_state_id(self, block_id: int, metadata: int = 0) -> int:
         """Pre-1.13 state packing: ``(block_id << 4) | (metadata & 0xF)``."""
@@ -229,8 +290,15 @@ class BlockRegistry(Registry[Block]):
             ) from exc
 
     def state_id(self, name: str, metadata: int = 0) -> int:
-        """Legacy state id for a block name and metadata."""
-        return self.legacy_state_id(self[name].id, metadata)
+        """State id for a block name.
+
+        Modern data ignores ``metadata`` and returns the block's default global state. Legacy data
+        keeps the ``(block_id << 4) | metadata`` packing.
+        """
+        block = self[name]
+        if self._modern:
+            return block.default_state_id or block.min_state_id
+        return self.legacy_state_id(block.id, metadata)
 
 
 class ItemRegistry(Registry[Item]):

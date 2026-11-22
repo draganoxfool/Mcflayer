@@ -27,6 +27,7 @@ from pyflayer.ext.commands.errors import (
     CommandInvokeError,
     CommandNotFound,
     CommandPrefixError,
+    DisabledCommand,
     ExtensionAlreadyLoaded,
     ExtensionFailed,
     ExtensionNotLoaded,
@@ -194,8 +195,6 @@ class Bot(_BaseBot):
                 view.index = saved
                 break
             command = sub
-        if isinstance(command, Group) and not command.invoke_without_command:
-            raise CommandNotFound(command.qualified_name)
         ctx = Context(
             bot=self,
             message=message or ChatMessage(content=text, sender=author),
@@ -208,6 +207,10 @@ class Bot(_BaseBot):
             prefix=prefix,
         )
         try:
+            if not command.enabled:
+                raise DisabledCommand(f"command {command.qualified_name!r} is disabled")
+            if isinstance(command, Group) and not command.invoke_without_command:
+                raise CommandNotFound(command.qualified_name)
             await command.prepare(ctx)
             cog = command.cog
             if isinstance(cog, Cog):
@@ -324,6 +327,8 @@ class Bot(_BaseBot):
         if name in self.cogs:
             await self.remove_cog(name)
         self.cogs[name] = cog
+        if self._loading_extension is not None:
+            self._extensions[self._loading_extension]["ledger"]["cogs"].append(cog)
         for command_obj in cog.get_commands():
             self.add_command(command_obj)
         subs = []
@@ -334,8 +339,6 @@ class Bot(_BaseBot):
         await cog.cog_load()
         for loop in cog.get_loops():
             loop._resume()
-        if self._loading_extension is not None:
-            self._extensions[self._loading_extension]["ledger"]["cogs"].append(cog)
 
     async def remove_cog(self, name: str) -> Cog | None:
         """Unload a cog, cancelling its loops and removing its commands."""
@@ -429,13 +432,14 @@ class Bot(_BaseBot):
         if data is None:
             return
         for cog in data["ledger"]["cogs"]:
-            if cog.qualified_name in self.cogs:
-                for command_obj in cog.get_commands():
-                    if self.commands.get(command_obj.name) is command_obj:
-                        self.remove_command(command_obj.name)
-                for loop in cog.get_loops():
-                    loop.cancel()
-                self.events.unsubscribe_owner(cog)
+            for command_obj in cog.get_commands():
+                if self.commands.get(command_obj.name) is command_obj:
+                    self.remove_command(command_obj.name)
+            for loop in cog.get_loops():
+                loop.cancel()
+            self.events.unsubscribe_owner(cog)
+            self._cog_subs.pop(cog, None)
+            if self.cogs.get(cog.qualified_name) is cog:
                 self.cogs.pop(cog.qualified_name, None)
         for command_obj in data["ledger"]["commands"]:
             if self.commands.get(command_obj.name) is command_obj:

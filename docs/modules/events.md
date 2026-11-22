@@ -42,10 +42,14 @@ bus.dispatch(ChatEvent(message=msg))
 
 event = await bus.wait_for(ChatEvent, check=lambda e: e.message.sender == "Steve", timeout=5)
 event = await bus.expect(RespawnEvent, timeout=5)  # register first, then await
-async for event in bus.stream(ChatEvent, maxsize=256):
-    ...
+async with bus.stream(ChatEvent, maxsize=256) as events:
+    async for event in events:
+        ...
 await bus.aclose()
 ```
+
+The stream remains an async iterator and supports explicit `await stream.aclose()`. Use the async
+context manager when iteration may stop early; `async for` alone does not unsubscribe on `break`.
 
 ## Semantics
 

@@ -58,6 +58,25 @@ async def test_connect_with_encryption_and_compression() -> None:
         await client.close()
 
 
+@pytest.mark.parametrize("use_compression", [True, False])
+async def test_server_compression_transition_is_mandatory(use_compression: bool) -> None:
+    async with FakeServer(compression=1) as server:
+        client = ProtocolClient(
+            "127.0.0.1",
+            "Steve",
+            port=server.port,
+            use_srv=False,
+            use_compression=use_compression,
+        )
+        await client.connect()
+        assert client.compression_threshold == 1
+        await _read_until(client, "position")
+        await client.send_chat("compression transition")
+        echo = await _read_until(client, "chat")
+        assert "compression transition" in echo.fields["message"]
+        await client.close()
+
+
 async def test_login_rejected() -> None:
     async with FakeServer(reject_login='{"text":"you are not allowed"}') as server:
         client = ProtocolClient("127.0.0.1", "Steve", port=server.port, use_srv=False)

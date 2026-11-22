@@ -37,6 +37,7 @@ PLAYER_WINDOW = 0
 HOTBAR_START = 36
 HOTBAR_SLOTS = 9
 PLAYER_WINDOW_SIZE = 45
+PLAYER_INVENTORY_COPY_SIZE = 36
 
 #: Wire slot used by ``set_slot`` for the item held by the mouse cursor.
 CURSOR_SLOT = -1
@@ -78,10 +79,10 @@ class Window:
     def container_slots(self) -> int:
         """Slots before the player-inventory copy (chest 27, crafting table 10, furnace 3).
 
-        Vanilla's ``open_window.slotCount`` includes the 36 player-inventory slots, so this is
+        Container windows append 36 player-inventory slots, so this is
         derived from the window size. Window 0 is the player inventory itself and returns 9.
         """
-        return max(0, self.size - 36)
+        return max(0, self.size - PLAYER_INVENTORY_COPY_SIZE)
 
     def slot(self, index: int) -> ItemStack | None:
         """Item in a slot (``None`` when out of range or empty)."""

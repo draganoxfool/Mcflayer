@@ -11,13 +11,16 @@ import pytest
 import pyflayer.ext.commands as commands
 import pyflayer.ext.tasks as tasks
 from pyflayer._internal.clock import FakeClock
-from pyflayer.events.catalog import ChatEvent, PhysicsTickEvent
+from pyflayer.events.catalog import ChatEvent, ConnectEvent, DisconnectEvent, PhysicsTickEvent
 from pyflayer.ext.commands.errors import (
+    BadArgument,
     CommandNotFound,
     CommandOnCooldown,
     CommandPrefixError,
+    DisabledCommand,
     ExtensionFailed,
     ExtensionNotLoaded,
+    MaxConcurrencyReached,
 )
 from pyflayer.ext.commands.view import StringView, tokenize
 from pyflayer.models.chat import ChatMessage
@@ -170,6 +173,37 @@ async def test_alias_and_programmatic_dispatch() -> None:
     assert called == ["pong"]
 
 
+@pytest.mark.parametrize("enabled", [False, True])
+@pytest.mark.parametrize("route", ["chat", "direct"])
+async def test_enabled_commands_dispatch_through_chat_and_direct_routes(
+    enabled: bool, route: str
+) -> None:
+    bot = make_bot(prefix="!")
+    called: list[str] = []
+    errors: list[BaseException] = []
+
+    @bot.command(enabled=enabled)
+    async def toggle(ctx: commands.Context) -> None:
+        called.append(ctx.invoked_with)
+
+    @bot.on_command_error
+    async def on_error(ctx: commands.Context, error: BaseException) -> None:
+        errors.append(error)
+
+    if route == "chat":
+        await bot.process_message(ChatMessage(content="!toggle", sender="Alex"))
+    else:
+        await bot.dispatch_command("toggle", author="Alex")
+
+    if enabled:
+        assert called == ["toggle"]
+        assert errors == []
+    else:
+        assert called == []
+        assert len(errors) == 1
+        assert isinstance(errors[0], DisabledCommand)
+
+
 async def test_context_reply_strips_leading_command_slash() -> None:
     async with FakeServer() as server:
         bot = commands.Bot("Steve", host="127.0.0.1", port=server.port, use_srv=False)
@@ -237,6 +271,34 @@ async def test_greedy_collects_remaining_tokens() -> None:
 
     await bot.dispatch_command('say one "two three" four', author="Alex", is_whisper=True)
     assert got == [["one", "two three", "four"]]
+
+
+async def test_varargs_expand_converted_values_and_allow_empty() -> None:
+    bot = make_bot()
+    got: list[tuple[int, ...]] = []
+
+    @bot.command()
+    async def collect(ctx: commands.Context, *words: int) -> None:
+        got.append(words)
+
+    await bot.dispatch_command("collect 1 2 3", author="Alex", is_whisper=True)
+    await bot.dispatch_command("collect", author="Alex", is_whisper=True)
+    assert got == [(1, 2, 3), ()]
+
+
+async def test_cog_varargs_keep_cog_callback_binding() -> None:
+    bot = make_bot()
+    got: list[tuple[object, tuple[int, ...]]] = []
+
+    class Collector(commands.Cog):
+        @commands.command()
+        async def collect(self, ctx: commands.Context, *words: int) -> None:
+            got.append((self, words))
+
+    cog = Collector(bot)
+    await bot.add_cog(cog)
+    await bot.dispatch_command("collect 4 5", author="Alex", is_whisper=True)
+    assert got == [(cog, (4, 5))]
 
 
 async def test_annotated_converter_overrides_base_annotation() -> None:
@@ -328,6 +390,122 @@ async def test_max_concurrency_wait_queues_instead_of_rejecting() -> None:
     await asyncio.gather(first, second)
     assert started == ["Alex", "Bob"]
     assert finished == ["Alex", "Bob"]
+
+
+async def test_max_concurrency_reserves_before_before_invoke() -> None:
+    bot = make_bot()
+    entered: list[str] = []
+    first_entered = asyncio.Event()
+    second_checked = asyncio.Event()
+    release_first = asyncio.Event()
+
+    async def check(ctx: commands.Context) -> bool:
+        if ctx.sender_name == "Bob":
+            second_checked.set()
+        return True
+
+    @bot.command()
+    @commands.check(check)
+    @commands.max_concurrency(1, commands.BucketType.global_, wait=True)
+    async def limited(ctx: commands.Context) -> None:
+        pass
+
+    @limited.before_invoke
+    async def before(ctx: commands.Context) -> None:
+        entered.append(ctx.sender_name)
+        if ctx.sender_name == "Alex":
+            first_entered.set()
+            await release_first.wait()
+
+    first = asyncio.create_task(bot.dispatch_command("limited", author="Alex", is_whisper=True))
+    await first_entered.wait()
+    second = asyncio.create_task(bot.dispatch_command("limited", author="Bob", is_whisper=True))
+    await second_checked.wait()
+    assert entered == ["Alex"]
+
+    release_first.set()
+    await asyncio.gather(first, second)
+    assert entered == ["Alex", "Bob"]
+
+
+async def test_max_concurrency_non_wait_rejects_before_before_invoke() -> None:
+    bot = make_bot()
+    entered: list[str] = []
+    errors: list[BaseException] = []
+    first_entered = asyncio.Event()
+    release_first = asyncio.Event()
+    rejected = asyncio.Event()
+
+    @bot.command()
+    @commands.max_concurrency(1, commands.BucketType.global_, wait=False)
+    async def limited(ctx: commands.Context) -> None:
+        pass
+
+    @limited.before_invoke
+    async def before(ctx: commands.Context) -> None:
+        entered.append(ctx.sender_name)
+        if ctx.sender_name == "Alex":
+            first_entered.set()
+            await release_first.wait()
+
+    @bot.on_command_error
+    async def on_error(ctx: commands.Context, error: BaseException) -> None:
+        errors.append(error)
+        rejected.set()
+
+    first = asyncio.create_task(bot.dispatch_command("limited", author="Alex", is_whisper=True))
+    await first_entered.wait()
+    second = asyncio.create_task(bot.dispatch_command("limited", author="Bob", is_whisper=True))
+    try:
+        await asyncio.wait_for(rejected.wait(), timeout=1)
+    finally:
+        release_first.set()
+        await asyncio.gather(first, second, return_exceptions=True)
+
+    assert entered == ["Alex"]
+    assert len(errors) == 1 and isinstance(errors[0], MaxConcurrencyReached)
+
+
+async def test_max_concurrency_releases_after_before_invoke_failure() -> None:
+    bot = make_bot()
+    entered: list[str] = []
+    errors: list[BaseException] = []
+    first_entered = asyncio.Event()
+    second_checked = asyncio.Event()
+    fail_first = asyncio.Event()
+
+    async def check(ctx: commands.Context) -> bool:
+        if ctx.sender_name == "Bob":
+            second_checked.set()
+        return True
+
+    @bot.command()
+    @commands.check(check)
+    @commands.max_concurrency(1, commands.BucketType.global_, wait=True)
+    async def limited(ctx: commands.Context) -> None:
+        pass
+
+    @limited.before_invoke
+    async def before(ctx: commands.Context) -> None:
+        entered.append(ctx.sender_name)
+        if ctx.sender_name == "Alex":
+            first_entered.set()
+            await fail_first.wait()
+            raise RuntimeError("hook failed")
+
+    @bot.on_command_error
+    async def on_error(ctx: commands.Context, error: BaseException) -> None:
+        errors.append(error)
+
+    first = asyncio.create_task(bot.dispatch_command("limited", author="Alex", is_whisper=True))
+    await first_entered.wait()
+    second = asyncio.create_task(bot.dispatch_command("limited", author="Bob", is_whisper=True))
+    await second_checked.wait()
+
+    fail_first.set()
+    await asyncio.gather(first, second)
+    assert entered == ["Alex", "Bob"]
+    assert len(errors) == 1 and isinstance(errors[0], RuntimeError)
 
 
 async def test_cooldown_uses_injected_clock() -> None:
@@ -494,6 +672,55 @@ async def test_extension_load_unload_and_reload_no_leaks(
         await bot.unload_extension("extmod")
 
 
+async def test_failed_cog_load_rolls_back_all_registrations(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    (tmp_path / "failingcogmod.py").write_text(
+        textwrap.dedent(
+            """
+            from pyflayer.ext import commands, tasks
+
+            class FailingCog(commands.Cog):
+                @commands.Cog.listener()
+                async def on_chat(self, event):
+                    pass
+
+                @commands.command()
+                async def ping(self, ctx):
+                    pass
+
+                @tasks.loop(seconds=60)
+                async def ticker(self):
+                    pass
+
+                async def cog_load(self):
+                    self.ticker.start()
+                    raise RuntimeError("cog setup failed")
+
+            async def setup(bot):
+                bot.failed_cog = FailingCog(bot)
+                await bot.add_cog(bot.failed_cog)
+            """
+        )
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    bot = make_bot()
+    baseline_subscriptions = bot.events.subscription_count
+    baseline_commands = set(bot.commands)
+
+    with pytest.raises(ExtensionFailed):
+        await bot.load_extension("failingcogmod")
+    await _settle()
+
+    cog = bot.failed_cog
+    assert "failingcog" not in bot.cogs
+    assert "ping" not in bot.commands
+    assert set(bot.commands) == baseline_commands
+    assert bot.events.subscription_count == baseline_subscriptions
+    assert cog not in bot._cog_subs
+    assert not cog.ticker.is_running()
+
+
 async def test_broken_reload_rolls_back(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> None:
     module = tmp_path / "brokenmod.py"
     module.write_text(EXTENSION)
@@ -547,6 +774,13 @@ async def test_flag_converter_parses_values() -> None:
     assert options.count == 5
     assert options.silent is True
 
+    options = await Options().convert(ctx, "--count=7 --silent")
+    assert options.count == 7
+    assert options.silent is True
+
+    with pytest.raises(BadArgument, match="requires a value"):
+        await Options().convert(ctx, "--count")
+
 
 async def test_help_lists_commands() -> None:
     bot = make_bot()
@@ -590,6 +824,86 @@ async def test_loop_aligned_to_physics_ticks() -> None:
     assert not cog.ticker.is_running()
 
 
+@pytest.mark.parametrize("reconnect", [True, False])
+@pytest.mark.parametrize("tick_based", [True, False])
+async def test_loop_connection_lifecycle(reconnect: bool, tick_based: bool) -> None:
+    clock = FakeClock()
+    bot = make_bot(clock=clock)
+    loop_options: dict[str, Any] = {"reconnect": reconnect}
+    if tick_based:
+        loop_options["ticks"] = 2
+    else:
+        loop_options["seconds"] = 1
+
+    class LifecycleCog(commands.Cog):
+        def __init__(self, bot: commands.Bot) -> None:
+            super().__init__(bot)
+            self.runs = 0
+
+        @tasks.loop(**loop_options)
+        async def ticker(self) -> None:
+            self.runs += 1
+
+    def tick(index: int) -> None:
+        bot.events.dispatch(PhysicsTickEvent(tick=index, position=Vec3(0, 64, 0), on_ground=True))
+
+    cog = LifecycleCog(bot)
+    await bot.add_cog(cog)
+    task = cog.ticker.start()
+    await _settle()
+    assert cog.runs == 1
+
+    if tick_based:
+        tick(1)
+        await _settle()
+    else:
+        await clock.advance_async(0.4)
+
+    bot.events.dispatch(DisconnectEvent(reason="test disconnect"))
+    await _settle()
+
+    if reconnect:
+        assert cog.ticker.is_running()
+        if tick_based:
+            tick(2)
+            await _settle()
+        else:
+            await clock.advance_async(5)
+        assert cog.runs == 1
+
+        bot.events.dispatch(ConnectEvent(host="localhost", port=25565, protocol=47))
+        await _settle()
+        if tick_based:
+            tick(3)
+            await _settle()
+            assert cog.runs == 1
+            tick(4)
+            await _settle()
+        else:
+            await clock.advance_async(0.59)
+            await _settle()
+            assert cog.runs == 1
+            await clock.advance_async(0.01)
+            await _settle()
+        assert cog.runs == 2
+        assert cog.ticker.is_running()
+        cog.ticker.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+    else:
+        assert not cog.ticker.is_running()
+        await asyncio.gather(task, return_exceptions=True)
+        bot.events.dispatch(ConnectEvent(host="localhost", port=25565, protocol=47))
+        if tick_based:
+            tick(2)
+            tick(3)
+        else:
+            await clock.advance_async(5)
+        await _settle()
+        assert cog.runs == 1
+
+    assert not cog.ticker.is_running()
+
+
 async def test_loop_descriptor_is_stable_and_remove_cog_cancels_it() -> None:
     clock = FakeClock()
     bot = make_bot(clock=clock)
@@ -630,6 +944,47 @@ async def test_standalone_loop_can_be_started() -> None:
     assert not once.is_running()
 
 
+async def test_finite_loop_restart_resets_iteration_count() -> None:
+    runs: list[int] = []
+
+    @tasks.loop(count=1)
+    async def once() -> None:
+        runs.append(once.current_loop)
+
+    await once.start()
+    assert runs == [1]
+    assert once.current_loop == 1
+
+    await once.restart()
+    assert runs == [1, 1]
+    assert once.current_loop == 1
+
+
+async def test_finite_loop_restart_cancels_active_run() -> None:
+    started = asyncio.Event()
+    runs = 0
+
+    @tasks.loop(count=1)
+    async def once() -> None:
+        nonlocal runs
+        runs += 1
+        if runs == 1:
+            started.set()
+            await asyncio.Event().wait()
+
+    original_task = once.start()
+    await started.wait()
+    assert once.current_loop == 1
+
+    restarted_task = once.restart()
+    with pytest.raises(asyncio.CancelledError):
+        await original_task
+    await restarted_task
+
+    assert runs == 2
+    assert once.current_loop == 1
+
+
 async def test_loop_count_with_fake_clock() -> None:
     clock = FakeClock()
     bot = make_bot(clock=clock)
@@ -649,8 +1004,10 @@ async def test_loop_count_with_fake_clock() -> None:
     await _settle()
     # First iteration runs immediately, then waits one second for the second.
     assert cog.runs == 1
+    await _settle(10)
+    assert clock.pending == 1
     clock.advance(1.0)
-    await _settle()
+    await _settle(10)
     assert cog.runs == 2
 
 

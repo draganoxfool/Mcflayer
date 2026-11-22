@@ -25,6 +25,7 @@ from pyflayer.ext.commands.errors import (
     CheckFailure,
     CommandInvokeError,
     CommandOnCooldown,
+    MaxConcurrencyReached,
     MissingRequiredArgument,
     TooManyArguments,
 )
@@ -162,7 +163,7 @@ class Command:
                 if token is None:
                     break
                 values.append(await convert_argument(ctx, param.converter, token))
-            ctx.args.append(values)
+            ctx.args.extend(values)
             return
         if param.flags:
             rest = view.read_rest().strip()
@@ -216,37 +217,39 @@ class Command:
             key = ctx.sender_name if per.name == "player" else "global"
             running = self._running.get(key, 0)
             if running >= number and not wait:
-                from pyflayer.ext.commands.errors import MaxConcurrencyReached
-
                 raise MaxConcurrencyReached(number, per)
         return True
 
     # ------------------------------------------------------------------ invocation
     async def invoke(self, ctx: Any) -> None:
         """Run before hooks, the body and after hooks."""
-        if self._before is not None:
-            result = self._before(ctx)
-            if inspect.isawaitable(result):
-                await result
         key = (
             ctx.sender_name
             if self.max_concurrency and self.max_concurrency[1].name == "player"
             else "global"
         )
         semaphore: asyncio.Semaphore | None = None
+        reserved = False
         if self.max_concurrency is not None:
             number, _per, wait = self.max_concurrency
             if wait:
-                # A waiting command queues here; the semaphore is released in the finally
-                # block below, once the command body has finished.
                 semaphore = self._semaphores.get(key)
                 if semaphore is None:
                     semaphore = asyncio.Semaphore(number)
                     self._semaphores[key] = semaphore
                 await semaphore.acquire()
+                reserved = True
             else:
+                running = self._running.get(key, 0)
+                if running >= number:
+                    raise MaxConcurrencyReached(number, self.max_concurrency[1])
                 self._running[key] = self._running.get(key, 0) + 1
+                reserved = True
         try:
+            if self._before is not None:
+                result = self._before(ctx)
+                if inspect.isawaitable(result):
+                    await result
             args: list[Any] = [ctx, *ctx.args]
             if self.cog is not None:
                 args = [self.cog, *args]
@@ -256,15 +259,15 @@ class Command:
                     await result
             except Exception as exc:
                 raise CommandInvokeError(exc) from exc
+            if self._after is not None:
+                result = self._after(ctx)
+                if inspect.isawaitable(result):
+                    await result
         finally:
-            if semaphore is not None:
+            if reserved and semaphore is not None:
                 semaphore.release()
-            elif self.max_concurrency is not None:
+            elif reserved and self.max_concurrency is not None:
                 self._running[key] = max(0, self._running.get(key, 1) - 1)
-        if self._after is not None:
-            result = self._after(ctx)
-            if inspect.isawaitable(result):
-                await result
 
     @property
     def qualified_name(self) -> str:

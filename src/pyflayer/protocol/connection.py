@@ -44,7 +44,7 @@ async def resolve_address(
 
     def _lookup() -> ResolvedAddress:
         try:
-            import dns.resolver  # type: ignore[import-untyped]
+            import dns.resolver
 
             resolver = dns.resolver.Resolver()
             resolver.lifetime = timeout

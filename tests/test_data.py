@@ -74,7 +74,7 @@ def test_version_helpers() -> None:
 
 def test_unsupported_version() -> None:
     with pytest.raises(UnsupportedVersion):
-        McData.load("1.20.4")  # not vendored in this repo
+        McData.load("1.99.9")  # parseable, but no data snapshot is vendored
 
 
 def test_default_data_dir_exists() -> None:

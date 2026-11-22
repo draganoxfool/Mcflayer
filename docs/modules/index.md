@@ -1,13 +1,14 @@
 # Module reference
 
-This section documents every package that exists after Milestone 5. It is the practical companion to
+This section documents every package that exists after Milestone 7. It is the practical companion to
 [Architecture](../ARCHITECTURE.md): the architecture describes the full target, these pages describe
 what is **actually implemented today** and how to use it.
 
 ## Layer map (implemented parts in bold)
 
 ```
-L8  swarm                          (empty)
+L8  swarm                          **BotCluster, shared chunk stores/views, login staggering,
+                                      claims, blackboard, path cache, metrics**
 L7  ext.commands, ext.tasks        **command bot, cogs, converters, checks, flags, help,
                                       extensions with atomic reload, tasks.loop**
 L6  bot                            **Bot, chat parser, ChatQueue, world/entity/inventory handlers,
@@ -27,8 +28,9 @@ L0  errors, models, _internal      **all implemented**
 The reference target is **Minecraft 1.8.9 / protocol 47**. M3 adds chunk/block/entity/inventory state
 on top of the M2 bot; M4 adds deterministic physics, a drift-compensated 20 TPS loop, movement
 packet cadence, sprint/sneak `entity_action` changes and teleport reconciliation; M5 adds the
-discord.py-inspired command and task layer. Pathfinding is M6. The vendored `minecraft-data`
-subset is
+discord.py-inspired command and task layer; M7 adds multi-bot clusters with shared chunk storage,
+staggered logins, coordination primitives and metrics. Pathfinding and the action framework (M6)
+remain design-only. The vendored `minecraft-data` subset is
 upstream `pc/1.8`; its `version.json` records 1.8.8, which shares protocol 47 and data with 1.8.9.
 
 Version differences are expressed through [`Features`](data.md#features) and the schema itself (for
@@ -54,6 +56,7 @@ scattered version comparisons in protocol code.
 | [Physics](physics.md) | `pyflayer.physics` | Player state, controls, swept collision, media, `TickDriver`, movement fidelity |
 | [Commands](commands.md) | `pyflayer.ext.commands` | Address-based dispatch, cogs, converters, checks, cooldowns, flags, help, extensions |
 | [Tasks](tasks.md) | `pyflayer.ext.tasks` | `tasks.loop` on wall time or physics ticks |
+| [Swarm](swarm.md) | `pyflayer.swarm` | Clusters, shared worlds, login staggering, claims, blackboard, path cache, metrics |
 
 ## Public import surface
 
@@ -74,6 +77,8 @@ pyflayer.PhysicsEngine, pyflayer.PlayerState, pyflayer.ControlState, pyflayer.Ti
 pyflayer.physics.move_box, pyflayer.physics.MoveResult, pyflayer.physics.Medium
 pyflayer.ext.commands.Bot, pyflayer.ext.commands.Cog, pyflayer.ext.commands.command
 pyflayer.ext.tasks.loop
+pyflayer.swarm.BotCluster, pyflayer.swarm.SharedWorldRegistry, pyflayer.swarm.LoginStaggerPolicy
+pyflayer.swarm.ClaimRegistry, pyflayer.swarm.Blackboard, pyflayer.swarm.PathCache
 pyflayer.Vec3, pyflayer.BlockPos, pyflayer.ChatComponent, pyflayer.ChatMessage
 pyflayer.errors
 ```

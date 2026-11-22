@@ -22,6 +22,7 @@ __all__ = [
     "CommandOnCooldown",
     "CommandPrefixError",
     "ConversionError",
+    "DisabledCommand",
     "ExtensionAlreadyLoaded",
     "ExtensionError",
     "ExtensionFailed",
@@ -61,6 +62,10 @@ class CommandNotFound(CommandError):
     def __init__(self, name: str, **fields: Any) -> None:
         super().__init__(f"command {name!r} not found", name=name, **fields)
         self.name = name
+
+
+class DisabledCommand(CommandError):
+    """The resolved command is disabled and cannot be invoked."""
 
 
 class UserInputError(CommandError):

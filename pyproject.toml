@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcflayer"
-version = "0.8.1"
+version = "0.9.0"
 description = "asyncio Minecraft Java Edition bot library - transport, data, codecs, login and events"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -77,7 +77,9 @@ plugins = []
 [tool.pyright]
 pythonVersion = "3.11"
 include = ["src"]
-typeCheckingMode = "strict"
+typeCheckingMode = "basic"
+venvPath = "."
+venv = ".venv"
 
 [tool.coverage.run]
 source = ["pyflayer"]

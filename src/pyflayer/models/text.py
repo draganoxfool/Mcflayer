@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any, Self
+from typing import Any, Self, cast
 
 __all__ = ["ChatComponent", "chat_component_from_json", "plain_text_from_json"]
 
@@ -51,7 +51,7 @@ class ChatComponent:
         value becomes an empty component.
         """
         if isinstance(raw, ChatComponent):
-            return raw
+            return cast(Self, raw)
         if isinstance(raw, str):
             stripped = raw.strip()
             if stripped.startswith(("{", "[")):

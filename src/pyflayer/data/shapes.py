@@ -58,10 +58,14 @@ class ShapeTable:
         """Collision boxes for a named block."""
         return self.shapes.get(self.shape_id(name, metadata), SHAPE_EMPTY)
 
-    def boxes_for_legacy_state(self, state_id: int, blocks: BlockRegistry) -> tuple[AABB, ...]:
-        """Collision boxes for a pre-1.13 ``(block << 4) | meta`` state id."""
-        block, metadata = blocks.from_legacy_state_id(state_id)
+    def boxes_for_state(self, state_id: int, blocks: BlockRegistry) -> tuple[AABB, ...]:
+        """Collision boxes for a legacy or modern global block-state id."""
+        block, metadata = blocks.from_state_id(state_id)
         return self.boxes_for(block.name, metadata)
+
+    def boxes_for_legacy_state(self, state_id: int, blocks: BlockRegistry) -> tuple[AABB, ...]:
+        """Backward-compatible alias for :meth:`boxes_for_state`."""
+        return self.boxes_for_state(state_id, blocks)
 
     def state_count(self) -> int:
         """Number of collision-shaped block entries."""

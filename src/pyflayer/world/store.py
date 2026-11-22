@@ -70,6 +70,60 @@ class ChunkStore:
         """Column at ``pos``."""
         return self._chunks.get(pos)
 
+    def replace(self, column: ChunkColumn) -> None:
+        """Store ``column`` without changing any refcount.
+
+        Shared worlds use this when the same bot sends a newer copy of a chunk it already holds;
+        :meth:`put` would add a second ref for the same owner.
+        """
+        self._chunks[column.pos] = column
+
+    @property
+    def chunks(self) -> dict[ChunkPos, ChunkColumn]:
+        """Live chunk mapping (mutated only on the event loop)."""
+        return self._chunks
+
+    def release_all(self, bot_id: int) -> int:
+        """Drop every ref held by ``bot_id``; return the number of chunks released."""
+        released = 0
+        for pos in list(self._refs):
+            refs = self._refs[pos]
+            if bot_id not in refs:
+                continue
+            del refs[bot_id]
+            released += 1
+            if not refs:
+                del self._refs[pos]
+                self._chunks.pop(pos, None)
+        return released
+
+    def stats(self) -> dict[str, int]:
+        """Memory-oriented counters used by swarm metrics."""
+        sections = 0
+        estimated_bytes = 0
+        for column in self._chunks.values():
+            sections += column.section_count
+            if column.biomes is not None:
+                estimated_bytes += int(column.biomes.nbytes)
+            for section in column.sections:
+                if section is None:
+                    continue
+                blocks = section.blocks
+                if blocks.indices is not None:
+                    estimated_bytes += int(blocks.indices.nbytes)
+                if blocks.palette is not None:
+                    estimated_bytes += 8 * len(blocks.palette)
+                if section.block_light is not None:
+                    estimated_bytes += int(section.block_light.nbytes)
+                if section.sky_light is not None:
+                    estimated_bytes += int(section.sky_light.nbytes)
+        return {
+            "chunks": len(self._chunks),
+            "refs": self.refcount,
+            "sections": sections,
+            "estimated_bytes": estimated_bytes,
+        }
+
     def apply_block(self, pos: BlockPos, state_id: int, *, from_bot: int = 0) -> bool:
         """Apply a block update once; returns ``False`` for duplicates/unloaded chunks."""
         del from_bot

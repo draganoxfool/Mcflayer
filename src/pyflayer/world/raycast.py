@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Any
 
 from pyflayer.models.enums import Face
 from pyflayer.models.vec3 import BlockPos, Vec3
@@ -67,8 +68,8 @@ def raycast(
         state_id = _state(world, current)
         boxes = _boxes(world, current)
         if include_fluids and state_id and not boxes:
-            block = _block(world, current)
-            if block is not None and block.name.removeprefix("minecraft:") in {
+            block: Any = _block(world, current)
+            if block is not None and getattr(block, "name", "").removeprefix("minecraft:") in {
                 "water",
                 "flowing_water",
                 "lava",
@@ -112,9 +113,11 @@ def _first_boundary(origin: float, cell: int, direction: float, step: int) -> fl
     return abs((boundary - origin) / direction)
 
 
-def _state(world: object, pos: BlockPos) -> int:
-    getter = world.block_state_id_or
-    return int(getter(pos, 0))
+def _state(world: Any, pos: BlockPos) -> int:
+    getter = getattr(world, "block_state_id_or", None)
+    if getter is not None:
+        return int(getter(pos, 0))
+    return 0
 
 
 def _boxes(world: object, pos: BlockPos) -> tuple[object, ...]:
@@ -122,9 +125,9 @@ def _boxes(world: object, pos: BlockPos) -> tuple[object, ...]:
     return tuple(getter(pos)) if getter is not None else ()
 
 
-def _block(world: object, pos: BlockPos) -> object | None:
+def _block(world: Any, pos: BlockPos) -> Any:
     try:
-        return world.block_at(pos)  # type: ignore[attr-defined]
+        return world.block_at(pos)
     except Exception:
         return None
 

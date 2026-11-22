@@ -10,7 +10,7 @@ Over-long encodings (a 6th VarInt byte or a 10th VarLong byte with continuation)
 
 from __future__ import annotations
 
-from typing import BinaryIO
+from typing import Any, BinaryIO
 
 from pyflayer.errors import ConnectionClosed, MalformedPacket
 
@@ -96,17 +96,17 @@ def decode_varlong(data: bytes | bytearray | memoryview, offset: int = 0) -> tup
     raise MalformedPacket("VarLong exceeds 10 bytes", offset=offset)
 
 
-async def read_varint(reader: object) -> int:
+async def read_varint(reader: Any) -> int:
     """Read a VarInt from an :class:`asyncio.StreamReader`-like object, one byte at a time."""
     return await _read_async(reader, 5, "VarInt")
 
 
-async def read_varlong(reader: object) -> int:
+async def read_varlong(reader: Any) -> int:
     """Read a VarLong from a stream, one byte at a time."""
     return await _read_async(reader, 10, "VarLong")
 
 
-async def _read_async(reader: object, max_bytes: int, name: str) -> int:
+async def _read_async(reader: Any, max_bytes: int, name: str) -> int:
     readexactly = reader.readexactly
     result = 0
     for i in range(max_bytes):
@@ -123,7 +123,7 @@ async def _read_async(reader: object, max_bytes: int, name: str) -> int:
             value = result & ((1 << bits) - 1)
             if value & (1 << (bits - 1)):
                 value -= 1 << bits
-            return value
+            return int(value)
     raise MalformedPacket(f"{name} exceeds {max_bytes} bytes")
 
 

@@ -5,12 +5,16 @@ implemented but missing a roadmap gate (tooling, property tests, integration); `
 started. See [Sessions](sessions.md) for the narrative log.
 
 ## Completed: M1 (transport/data/codecs), M2 (login/auth/events/bot), M3 (world state), M4
-(physics/movement), M5 (commands/tasks)
+(physics/movement), M5 (commands/tasks), M7 (swarm)
 
 Reference target: **1.8.9 / protocol 47**. M3 is covered by the test suite and verified live on
 PikaNetwork. **M4 is implemented and covered by the test suite:** deterministic physics, oracle
 differential traces, bot-owned 20 TPS ticks, movement packet cadence, sprint/sneak actions and
 teleport reconciliation. The live 10-minute vanilla/Paper anti-cheat soak has not been run here.
+**M7 is implemented and covered by the test suite:** shared refcounted chunk stores/views, tick
+groups, throttle-aware login staggering, cluster supervision, claims, blackboard, path cache and
+metrics. M6 (pathfinder/actions) is still design-only; the 50-bot Paper soak and memory benchmark
+have not been run here.
 
 ### Scaffolding and policy
 
@@ -158,6 +162,32 @@ teleport reconciliation. The live 10-minute vanilla/Paper anti-cheat soak has no
 - [ ] `tasks.loop(time=...)` scheduling and reconnect pausing (deferred).
 - [ ] Loop/listener cost benchmark (not required by the gate that ran here).
 
+## M7 — Multi-bot swarm and shared world (done, 0.9.0)
+
+- [x] `Bot(world=..., tick_driver=...)` injection, `Bot.physics_tick()`, `Bot.closed`.
+- [x] `SharedWorldRegistry` / `SharedWorld`: one refcounted `ChunkStore` per `(server, dimension)`,
+      first-copy-wins decode, per-bot held set, refcount GC, dimension rebinding.
+- [x] Idempotent shared block updates: only one bot emits `BlockUpdateEvent`; writes to chunks a bot
+      does not hold are dropped.
+- [x] `LoginStaggerPolicy`: minimum interval, jitter, concurrency cap, throttle-kick backoff on the
+      injected clock.
+- [x] `BotCluster`: add/spawn/remove, start/stop context manager, broadcast, run_all, per-bot
+      supervision with failure isolation, reconnect backoff and kick policy.
+- [x] Tick groups: round-robin `TickDriver`s at 20 TPS, p99 budget monitoring, automatic group
+      addition up to `max_tick_groups`, `degraded` metric.
+- [x] `ClaimRegistry` (blocks/regions, TTL, ownership, auto-release on death/disconnect), `Blackboard`
+      with change events and `wait_for`, version-aware `PathCache`, `RoleRegistry`.
+- [x] `ClusterMetrics` dict and Prometheus text (bots, shared chunks/bytes, tick timing, claims,
+      cache hit/miss). Cluster events `on_bot_spawn`, `on_bot_kicked`, `on_bot_reconnect`,
+      `on_bot_error`.
+- [x] `tests/test_swarm.py` (12 tests): refcounts, view isolation, dimension rebinding, staggering,
+      TTL claims, blackboard, LRU cache, three-bot FakeServer cluster, shared chunk/update, kick
+      retirement and one-bot-closed isolation.
+- [x] Docs: `modules/swarm.md`, `reference/swarm.md`, `handoff/M7.md`, `examples/swarm_miners.py`.
+- [ ] 50-bot Paper soak, shared-memory benchmark and tick-budget benchmark (environment-dependent).
+- [ ] Shared Microsoft token cache / injected `httpx.AsyncClient` (online auth remains untested).
+- [ ] Chaos/soak leak tests and a real two-server cluster.
+
 ## M4–M7 (summary from the roadmap)
 
 - [~] M4: implementation and test gates complete; the live vanilla/Paper anti-cheat soak remains.
@@ -165,8 +195,9 @@ teleport reconciliation. The live 10-minute vanilla/Paper anti-cheat soak has no
       extension reload, help, converters, checks, cooldowns.
 - [ ] M6: action scheduler with leases/preemption, non-blocking A*, executor, Dig/Place/Equip/Eat/
       Attack/Look/GoTo, SurvivalMonitor, inventory transactions.
-- [ ] M7: `BotCluster`, shared `ChunkStore`, staggered logins, shared tick driver, claims,
-      metrics, chaos/soak tests.
+- [~] M7: `BotCluster`, shared `ChunkStore`, staggered logins, shared tick groups, claims and
+      metrics are implemented; the live 50-bot soak and benchmarks remain.
+
 
 ## Known limitations (current code)
 
@@ -181,10 +212,13 @@ teleport reconciliation. The live 10-minute vanilla/Paper anti-cheat soak has no
   applied.
 - The 10-minute anti-cheat soak against vanilla/Paper has not been executed here.
 - The bot pauses physics while its current chunk is unloaded instead of falling through terrain.
-- NBT strings use standard UTF-8; Java Modified UTF-8 lone surrogates are rejected.
 - The protocol compiler treats unknown **mapper** values as raw integers and unknown **types** as
   hard `UnsupportedType` errors (never silent corruption).
 - `FakeClock.advance()` wakes sleepers but does not run tasks; use `advance_async()`.
+- M6 is not implemented, so swarm claims, roles and the path cache are primitives for callers;
+  no action scheduler consumes them and no planner fills the cache.
+- The M7 50-bot Paper soak, shared-memory benchmark and tick-budget benchmark were not run here.
+- Cluster auth is per bot; Microsoft tokens and the HTTP client are not shared across the swarm.
 - The SLP CLI prints to stdout (the one allowed non-library `print`).
 
 ## Commands

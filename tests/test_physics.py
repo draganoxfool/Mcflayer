@@ -9,7 +9,14 @@ import pytest
 from pyflayer._internal.clock import FakeClock
 from pyflayer.data import McData
 from pyflayer.models import AABB, BlockPos, ChunkPos, Vec3
-from pyflayer.physics import ControlState, PhysicsEngine, PlayerState, TickDriver
+from pyflayer.physics import (
+    ControlState,
+    PhysicsEngine,
+    PlayerState,
+    TickDriver,
+    move_box,
+    sample_medium,
+)
 from pyflayer.world import ChunkColumn, World
 
 MC = McData.load("1.8.9")
@@ -17,6 +24,8 @@ STONE = 16  # (1 << 4) | 0
 STONE_SLAB = 44 << 4
 WATER = 9 << 4
 FLOWING_WATER = 8 << 4
+LAVA = 10 << 4
+FLOWING_LAVA = 11 << 4
 OAK_STAIRS = (MC.blocks["oak_stairs"].id << 4) | 2  # bottom step, north-facing rise
 LADDER = MC.blocks["ladder"].id << 4
 SOUL_SAND = MC.blocks["soul_sand"].id << 4
@@ -47,6 +56,16 @@ def flat_world(
             for z in range(16):
                 for y in (64, 65):
                     column.apply_block_in_place(x, y, z, water_state)
+    world.apply_chunk(column)
+    return world
+
+
+def platform_world(*, end_x: int = 16, end_z: int = 10) -> World:
+    world = World(MC)
+    column = ChunkColumn(ChunkPos(0, 0))
+    for x in range(end_x):
+        for z in range(end_z):
+            column.apply_block_in_place(x, 63, z, STONE)
     world.apply_chunk(column)
     return world
 
@@ -94,6 +113,38 @@ def test_sprint_is_faster_than_walk_and_sneak_is_slower() -> None:
     assert sprint.velocity.z > walk.velocity.z > sneak.velocity.z
 
 
+def test_sneaking_stops_at_straight_platform_edge() -> None:
+    engine = PhysicsEngine()
+    world = platform_world()
+    state = PlayerState(Vec3(5.5, 64.0, 8.5), on_ground=True)
+
+    for _ in range(40):
+        state = engine.step(state, ControlState(forward=1, sneak=True, yaw=0), world)
+
+    assert state.position.z <= 10.3
+    assert state.position.z > 10.0
+    assert state.on_ground
+
+
+def test_sneaking_stops_at_diagonal_platform_corner() -> None:
+    engine = PhysicsEngine()
+    world = platform_world(end_x=10)
+    state = PlayerState(Vec3(8.5, 64.0, 8.5), on_ground=True)
+
+    for _ in range(40):
+        state = engine.step(
+            state,
+            ControlState(forward=1, strafe=1, sneak=True, yaw=0),
+            world,
+        )
+
+    assert state.position.x <= 10.3
+    assert state.position.z <= 10.3
+    assert state.position.x > 10.0
+    assert state.position.z > 10.0
+    assert state.on_ground
+
+
 def test_jump_arc_matches_reference_engine() -> None:
     engine = PhysicsEngine()
     world = flat_world()
@@ -122,6 +173,38 @@ def test_wall_stops_horizontal_motion_and_does_not_shrink_hitbox() -> None:
     assert state.velocity.z == pytest.approx(0.0)
     assert state.box.max_z - state.box.min_z == pytest.approx(0.6)
     assert state.position.y == pytest.approx(64.0)
+
+
+@pytest.mark.parametrize(
+    ("start_z", "amount", "expected_delta"),
+    [(8.5, 5.0, 1.2), (12.5, -5.0, -1.2)],
+)
+def test_large_motion_stops_at_wall_in_both_directions(
+    start_z: float, amount: float, expected_delta: float
+) -> None:
+    world = flat_world(wall_z=10)
+    box = AABB.from_center(Vec3(8.5, 64.0, start_z), 0.3, 1.8)
+
+    result = move_box(box, Vec3(0.0, 0.0, amount), world, can_step=False)
+
+    assert result.delta.z == pytest.approx(expected_delta)
+    assert result.hit_z
+    assert not result.box.intersects(AABB(8.0, 64.0, 10.0, 9.0, 66.0, 11.0))
+
+
+def test_large_motion_stops_at_thin_collision_shape() -> None:
+    class ThinShapeWorld:
+        def collision_boxes(self, pos: BlockPos) -> tuple[AABB, ...]:
+            if pos == BlockPos(0, 0, 4):
+                return (AABB(0.0, 0.0, 0.25, 1.0, 1.0, 0.35),)
+            return ()
+
+    box = AABB.from_center(Vec3(0.5, 0.1, 1.5), 0.2, 0.8)
+    result = move_box(box, Vec3(0.0, 0.0, 5.0), ThinShapeWorld(), can_step=False)
+
+    assert result.delta.z == pytest.approx(2.55)
+    assert result.hit_z
+    assert result.box.max_z == pytest.approx(4.25)
 
 
 def test_slab_step_up() -> None:
@@ -156,6 +239,38 @@ def test_flowing_water_sets_flag() -> None:
     state = engine.step(state, ControlState(), world)
 
     assert state.in_water
+    assert state.velocity.y > -0.5
+
+
+def test_fluid_sampling_detects_partial_horizontal_aabb_overlap() -> None:
+    world = flat_world()
+    _column(world).apply_block_in_place(0, 64, 2, WATER)
+
+    medium = sample_medium(world, Vec3(1.25, 64.2, 2.5), on_ground=False)
+
+    assert medium.in_water
+
+
+def test_fluid_sampling_respects_legacy_surface_height() -> None:
+    world = flat_world()
+    _column(world).apply_block_in_place(2, 64, 2, WATER)
+
+    overlapping = sample_medium(world, Vec3(2.5, 64.85, 2.5), on_ground=False)
+    above_surface = sample_medium(world, Vec3(2.5, 64.90, 2.5), on_ground=False)
+
+    assert overlapping.in_water
+    assert not above_surface.in_water
+
+
+@pytest.mark.parametrize("lava_state", [LAVA, FLOWING_LAVA])
+def test_lava_sets_flag_and_slows_fall(lava_state: int) -> None:
+    engine = PhysicsEngine()
+    world = flat_world(water=True, water_state=lava_state)
+    state = PlayerState(Vec3(8.5, 65.5, 8.5))
+
+    state = engine.step(state, ControlState(), world)
+
+    assert state.in_lava
     assert state.velocity.y > -0.5
 
 

@@ -81,6 +81,25 @@ async def test_keep_alive_is_answered() -> None:
         await _stop(bot, task)
 
 
+async def test_rejected_window_transaction_is_acknowledged() -> None:
+    async with FakeServer() as server:
+        bot = await _start_bot(server)
+        task = asyncio.create_task(bot.run())
+
+        server.send_play("transaction", {"windowId": 3, "action": 11, "accepted": True})
+        await asyncio.sleep(0.05)
+        assert not [packet for packet in server.received if packet.name == "transaction"]
+
+        server.send_play("transaction", {"windowId": 3, "action": 12, "accepted": False})
+        acknowledgements = await _wait_for_packets(server, "transaction")
+        assert acknowledgements[0].fields == {
+            "windowId": 3,
+            "action": 12,
+            "accepted": True,
+        }
+        await _stop(bot, task)
+
+
 async def test_death_triggers_respawn() -> None:
     async with FakeServer() as server:
         bot = await _start_bot(server)
@@ -303,6 +322,63 @@ async def test_cursor_set_slot_and_close_window() -> None:
     await bot._on_close_window(Packet("close_window", {"windowId": 2}, "play", "toClient"))
     assert bot.inventory.window(2) is None
     assert bot.inventory.cursor.empty
+    await bot.events.aclose()
+
+
+async def test_open_window_accepts_player_copy_set_slot_before_window_items() -> None:
+    bot = Bot("Steve", host="localhost", use_srv=False)
+    await bot._on_open_window(
+        Packet(
+            "open_window",
+            {
+                "windowId": 2,
+                "inventoryType": "minecraft:chest",
+                "windowTitle": "Chest",
+                "slotCount": 27,
+            },
+            "play",
+            "toClient",
+        )
+    )
+
+    window = bot.inventory.window(2)
+    assert window is not None
+    assert window.size == 63
+
+    item = ItemStack(item_id=276, count=1)
+    await bot._on_set_slot(
+        Packet(
+            "set_slot",
+            {"windowId": 2, "slot": 27, "item": item},
+            "play",
+            "toClient",
+        )
+    )
+
+    assert window.slot(27) == item
+    await bot.events.aclose()
+
+
+async def test_open_horse_window_uses_fixed_slots_and_player_copy() -> None:
+    bot = Bot("Steve", host="localhost", use_srv=False)
+    await bot._on_open_window(
+        Packet(
+            "open_window",
+            {
+                "windowId": 3,
+                "inventoryType": "EntityHorse",
+                "windowTitle": "Horse",
+                "slotCount": 0,
+            },
+            "play",
+            "toClient",
+        )
+    )
+
+    window = bot.inventory.window(3)
+    assert window is not None
+    assert window.size == 38
+    assert window.container_slots == 2
     await bot.events.aclose()
 
 

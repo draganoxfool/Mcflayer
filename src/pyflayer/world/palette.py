@@ -22,6 +22,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import cast
 
 import numpy as np
 
@@ -162,7 +163,8 @@ class PalettedContainer:
             return self.indices.astype(np.uint16, copy=True)
         assert self.palette is not None
         table = np.asarray(self.palette, dtype=np.uint16)
-        return table[self.indices].astype(np.uint16, copy=True)
+        result: np.ndarray = table[self.indices]
+        return cast(np.ndarray, result.astype(np.uint16, copy=True))
 
     @property
     def non_air(self) -> int:

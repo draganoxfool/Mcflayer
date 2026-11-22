@@ -378,3 +378,56 @@ Docs: new module guides (`commands`, `tasks`), API reference pages, `migrating-f
 - No slash commands, interactions, views, webhooks, permissions or feature parity (ADR-11).
 - `ruff`/`mypy`/`pyright`/`import-linter` remain unavailable in this Python 3.14 environment; the test
   suite is the verification gate that ran here.
+
+## Session 7 — 2026-11-22 — M7 multi-bot swarm and shared world
+
+**Prompt.** Read the docs and complete the last milestone module (M7).
+
+**Starting point.** M1–M5 were implemented; `ext` and the single-bot stack were green. `M6`
+(pathfinder/actions) and `M7` (swarm) existed only as empty packages. The last milestone is M7, so
+this session implemented the swarm layer while leaving M6 design-only.
+
+**Implemented**
+
+- `swarm/shared.py`: `SharedWorldRegistry` owns one `ChunkStore` per `(server, dimension)`;
+  `SharedWorld` is a per-bot view with a held set. First decode inserts, later copies add a ref,
+  refcount GC drops the column, `set_dimension` rebinds, and reads/writes outside the held set are
+  rejected. `find_blocks`/`snapshot` are restricted to the view.
+- `swarm/stagger.py`: `LoginStaggerPolicy` with minimum interval, jitter, concurrency cap,
+  throttle-kick detection/backoff and `record_success`.
+- `swarm/coordinator.py`: TTL block/region `ClaimRegistry` with all-or-nothing region claims,
+  `Blackboard` with change events and `wait_for`, version-aware LRU `PathCache`, `RoleRegistry`.
+- `swarm/metrics.py`: `ClusterMetrics`/`BotMetrics`, dict and Prometheus text.
+- `swarm/cluster.py`: `BotCluster` with add/spawn/remove, start/stop, broadcast, run_all, cluster
+  events, per-bot supervision, jittered reconnect, kick policy, round-robin tick groups with
+  p99-budget auto-degradation, and claim/role release on death/disconnect.
+- `world/store.py`: `chunks`, `replace`, `release_all`, `stats`; `World.set_dimension`.
+- `bot/bot.py`: `world=`/`tick_driver=` injection, public `physics_tick()`, `closed` property.
+- `examples/swarm_miners.py`, `tests/test_swarm.py` (12 tests).
+
+**Bugs found while verifying**
+
+- The uncommitted modern-codec work in `protocol/protodef.py` routed parameterized native types
+  through the named-type path, dropping their params. Every `container` decoded to `{}`, so login
+  and play packets were broken. Native specs now keep their parameters.
+- `_BitfieldCodec.write` rejected `BlockPos` for 1.8's `position` bitfield; it now accepts the same
+  value types as the native position writer.
+- `FakeServer.stop()` awaited `Server.wait_closed()` before closing accepted connections. On Python
+  3.13+ that waits for active connections and deadlocks teardown; connections are now closed first.
+- `tests/test_data.py` assumed `1.20.4` data was absent; it is present in the working tree, so the
+  test now checks a parseable-but-unvendored version (`1.99.9`).
+
+**Verification**
+
+```bash
+source .venv/bin/activate
+python -m pytest tests/test_swarm.py -q   # 12 passed
+python -m pytest -q                       # 323 passed
+ruff check src tests                      # All checks passed
+```
+
+**Not run.** The roadmap's 50-bot Paper soak, shared-memory benchmark, tick-budget benchmark and
+chaos/soak leak tests need a live server and a longer CI budget. M6 remains the missing layer: the
+swarm's claims, roles and path cache are ready but nothing consumes them automatically yet.
+
+**Version.** `0.9.0`.

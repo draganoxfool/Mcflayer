@@ -17,7 +17,7 @@ from typing import Protocol
 
 from pyflayer.models.aabb import AABB
 from pyflayer.models.vec3 import BlockPos, Vec3
-from pyflayer.physics.collision import STEP_HEIGHT, move_box
+from pyflayer.physics.collision import STEP_HEIGHT, _clip_sneak_displacement, move_box
 from pyflayer.physics.controls import ControlState
 from pyflayer.physics.media import sample_medium
 from pyflayer.physics.state import PlayerState
@@ -106,6 +106,9 @@ class PhysicsEngine:
         move_velocity = velocity
         if in_web:
             move_velocity = Vec3(velocity.x * 0.25, velocity.y * 0.05, velocity.z * 0.25)
+
+        if sneaking and on_ground:
+            move_velocity = _clip_sneak_displacement(state.box, move_velocity, world)
 
         result = move_box(
             state.box,

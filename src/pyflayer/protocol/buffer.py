@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import struct
 from collections.abc import Callable
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from pyflayer.data.features import Features
 from pyflayer.errors import MalformedPacket
@@ -83,7 +83,7 @@ class PacketReader:
                 packet=self.packet_name,
             )
 
-    def _unpack(self, fmt: str, size: int) -> object:
+    def _unpack(self, fmt: str, size: int) -> Any:
         self._need(size)
         value = struct.unpack_from(fmt, self._view, self._offset)[0]
         self._offset += size
@@ -112,6 +112,17 @@ class PacketReader:
         """Advance by ``count`` bytes."""
         self._need(count)
         self._offset += count
+
+    def unread_bytes(self, data: bytes) -> None:
+        """Push ``data`` back in front of the unread tail.
+
+        Used by codecs that must inspect and mutate a byte before handing it to another codec
+        (``topBitSetTerminatedArray`` clears the continuation bit on the first element byte).
+        """
+        tail = self._view[self._offset : self._limit].tobytes()
+        self._view = memoryview(bytes(data) + tail)
+        self._limit = len(self._view)
+        self._offset = 0
 
     # ------------------------------------------------------------------ ints
     def read_u8(self) -> int:

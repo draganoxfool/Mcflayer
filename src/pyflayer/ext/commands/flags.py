@@ -103,12 +103,14 @@ class FlagConverter(metaclass=_FlagMeta):
             declaration = type(self).__command_flags__.get(name)
             if declaration is None:
                 raise BadArgument(None, token, f"unknown flag --{name}")
+            annotation = hints.get(name)
             if raw is None:
+                if annotation is not bool:
+                    raise BadArgument(None, token, f"flag --{name} requires a value")
                 values[name] = True
                 continue
             converter = declaration.converter
             if converter is None:
-                annotation = hints.get(name)
                 converter = resolve_converter(annotation)
             from pyflayer.ext.commands.converters import convert as _convert
 

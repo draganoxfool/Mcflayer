@@ -66,6 +66,13 @@ class World:
         """Drop every chunk (dimension change, respawn, disconnect)."""
         self.chunks.clear()
 
+    def set_dimension(self, dimension: int | str) -> None:
+        """Switch the dimension label used by block-state resolution.
+
+        A shared world overrides this to rebind its chunk store.
+        """
+        self.dimension = dimension
+
     # ------------------------------------------------------------------ block reads
     def block_state_id(self, pos: BlockPos) -> int:
         """State id at ``pos``.

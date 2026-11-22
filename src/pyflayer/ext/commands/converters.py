@@ -128,7 +128,7 @@ class _BoolConverter:
 
 
 class _EnumConverter:
-    def __init__(self, enum: type) -> None:
+    def __init__(self, enum: Any) -> None:
         self.enum = enum
 
     async def convert(self, ctx: Any, argument: str) -> Any:
@@ -290,7 +290,7 @@ def _as_converter(annotation: object) -> Any:
     if origin is typing.Literal:
         return _LiteralConverter(get_args(annotation))
     if origin in (typing.Union, types.UnionType):
-        args = [arg for arg in get_args(annotation) if arg is not type(None)]
+        args = tuple(arg for arg in get_args(annotation) if arg is not type(None))
         if len(args) == 1:
             return _as_converter(args[0])
         return _UnionConverter([_as_converter(arg) for arg in args])
@@ -315,4 +315,4 @@ async def convert(ctx: Any, converter: Any, argument: str) -> Any:
     return await _apply(converter, ctx, argument)
 
 
-inspect_empty = inspect.Parameter.empty  # type: ignore[attr-defined]
+inspect_empty = inspect.Parameter.empty

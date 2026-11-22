@@ -82,8 +82,8 @@ named = read_named_nbt(PacketReader(raw))
 - Lists keep their element tag type (`NBTList(tag_type, items)`) so an empty list can be round-tripped.
 - Compounds are `dict[str, object]`; int/long arrays are tuples; byte arrays are `bytes`.
 - Depth limit 512 and negative/oversized lengths are rejected before allocation.
-- Strings use standard UTF-8, **not** Java Modified UTF-8; lone surrogates are rejected. This is a
-  documented choice: vanilla servers send standard UTF-8 in practice.
+- NBT names and string payloads use Java Modified UTF-8, including its UTF-16-code-unit handling
+  for supplementary characters. Ordinary protocol strings use their separate standard UTF-8 codec.
 
 ## UUID / BitSet
 

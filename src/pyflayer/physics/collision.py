@@ -69,6 +69,24 @@ def move_box(
     )
 
 
+def _clip_sneak_displacement(box: AABB, delta: Vec3, world: _WorldReader) -> Vec3:
+    x, z = delta.x, delta.z
+    while x != 0.0 and not _collides(box.translated(Vec3(x, -1.0, 0.0)), world):
+        x = _toward_zero(x, 0.05)
+    while z != 0.0 and not _collides(box.translated(Vec3(0.0, -1.0, z)), world):
+        z = _toward_zero(z, 0.05)
+    while x != 0.0 and z != 0.0 and not _collides(box.translated(Vec3(x, -1.0, z)), world):
+        x = _toward_zero(x, 0.05)
+        z = _toward_zero(z, 0.05)
+    return Vec3(x, delta.y, z)
+
+
+def _toward_zero(value: float, amount: float) -> float:
+    if value > 0.0:
+        return max(0.0, value - amount)
+    return min(0.0, value + amount)
+
+
 def _try_step(box: AABB, delta: Vec3, world: _WorldReader, step_height: float) -> MoveResult | None:
     raised = box.translated(Vec3(0.0, step_height, 0.0))
     if _collides(raised, world):
@@ -101,7 +119,15 @@ def _clip_axis(
     if amount == 0.0:
         return box, 0.0, False
 
-    swept = _offset(box, axis, amount)
+    translated = _offset(box, axis, amount)
+    swept = AABB(
+        min(box.min_x, translated.min_x),
+        min(box.min_y, translated.min_y),
+        min(box.min_z, translated.min_z),
+        max(box.max_x, translated.max_x),
+        max(box.max_y, translated.max_y),
+        max(box.max_z, translated.max_z),
+    )
     allowed = amount
     hit = False
     max_axis = _axis_max(box, axis)
@@ -110,10 +136,15 @@ def _clip_axis(
         if not swept.intersects(block):
             continue
         if amount > 0:
-            allowed = min(allowed, _axis_min(block, axis) - max_axis)
+            clearance = _axis_min(block, axis) - max_axis
+            if -_EPS <= clearance <= allowed + _EPS:
+                allowed = min(allowed, max(0.0, clearance))
+                hit = True
         else:
-            allowed = max(allowed, _axis_max(block, axis) - min_axis)
-        hit = True
+            clearance = min_axis - _axis_max(block, axis)
+            if -_EPS <= clearance <= -allowed + _EPS:
+                allowed = max(allowed, -max(0.0, clearance))
+                hit = True
 
     allowed = max(-abs(amount), min(abs(amount), allowed))
     return _offset(box, axis, allowed), allowed, hit

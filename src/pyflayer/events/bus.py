@@ -23,7 +23,7 @@ import asyncio
 import inspect
 import itertools
 import logging
-from collections.abc import AsyncIterator, Callable
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any
@@ -299,9 +299,11 @@ class EventBus:
         """
         return Expectation(self, event, check=check, timeout=timeout)
 
-    def stream(self, event: type[Event], *, maxsize: int = 256) -> AsyncIterator[Any]:
-        """Yield events until the consumer stops.
+    def stream(self, event: type[Event], *, maxsize: int = 256) -> _EventStream:
+        """Create a lazy event stream.
 
+        Use the stream as an async context manager for reliable cleanup when iteration stops early.
+        Plain async iteration remains supported; call ``aclose`` to unsubscribe explicitly.
         The queue is bounded; when full, the oldest event is dropped and ``dropped`` increments.
         """
         return _EventStream(self, event, maxsize=maxsize)
@@ -385,6 +387,13 @@ class _EventStream:
     def __aiter__(self) -> _EventStream:
         return self
 
+    async def __aenter__(self) -> _EventStream:
+        return self
+
+    async def __aexit__(self, exc_type: object, exc: object, tb: object) -> None:
+        del exc_type, exc, tb
+        await self.aclose()
+
     async def __anext__(self) -> Any:
         if self._queue is None:
             self._queue = asyncio.Queue(maxsize=self._maxsize)
@@ -400,12 +409,16 @@ class _EventStream:
         self._queue.put_nowait(event)
 
     async def aclose(self) -> None:
-        """Unsubscribe. Called automatically by ``async for`` cleanup."""
+        """Unsubscribe from the event bus.
+
+        Async iteration does not call this automatically; use ``async with`` for scoped cleanup.
+        """
         if self._sub is not None:
             self._bus.unsubscribe(self._sub)
             self._sub = None
 
     def __del__(self) -> None:  # pragma: no cover - defensive cleanup
-        if getattr(self, "_sub", None) is not None:
+        sub = getattr(self, "_sub", None)
+        if sub is not None:
             with suppress(Exception):
-                self._bus.unsubscribe(self._sub)
+                self._bus.unsubscribe(sub)

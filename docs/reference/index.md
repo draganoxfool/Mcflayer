@@ -1,6 +1,6 @@
 # API reference
 
-This is the generated reference for every public module in **mcflayer 0.8.0**, built with
+This is the generated reference for every public module in **mcflayer 0.9.0**, built with
 [mkdocstrings](https://mkdocstrings.github.io/) directly from the source. It follows the layout of
 the discord.py Read the Docs site: one page per module, every public class and function with its
 signature, parameters, attributes, return values and raised exceptions.
@@ -47,6 +47,7 @@ appears, with its signature, so the public surface is always complete.
 | [CLI](cli.md) | `pyflayer.cli` | `pyflayer-connect` and `pyflayer-status` entry points |
 | [Commands](commands.md) | `pyflayer.ext.commands` | Address-based dispatch, cogs, converters, checks, flags, help, extensions |
 | [Tasks](tasks.md) | `pyflayer.ext.tasks` | `tasks.loop` aligned to wall time or physics ticks |
+| [Swarm](swarm.md) | `pyflayer.swarm` | Clusters, shared worlds, login staggering, claims, blackboard, path cache, metrics |
 
 ## Public API policy
 

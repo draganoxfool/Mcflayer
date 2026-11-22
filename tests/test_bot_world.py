@@ -69,6 +69,22 @@ async def test_bot_applies_chunks_blocks_entities_and_inventory() -> None:
         assert bot.world.block_at(BlockPos(0, 64, 0)).name == "stone"
         assert chunks[0].non_air == 256
 
+        tile_entity_pos = BlockPos(3, 65, 4)
+        tile_entity_nbt = {"id": "Sign", "x": 3, "y": 65, "z": 4, "Text1": "hello"}
+        server.send_play(
+            "tile_entity_data",
+            {
+                "location": {"x": 3, "y": 65, "z": 4},
+                "action": 4,
+                "nbtData": tile_entity_nbt,
+            },
+        )
+        for _ in range(10):
+            if bot.world.block_entity_at(tile_entity_pos) is not None:
+                break
+            await asyncio.sleep(0.01)
+        assert bot.world.block_entity_at(tile_entity_pos) == tile_entity_nbt
+
         async with bot.events.expect(ChunkLoadEvent, timeout=2) as second_chunk:
             server.send_play(
                 "map_chunk",

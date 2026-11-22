@@ -58,6 +58,37 @@ def test_nameless_root() -> None:
     assert read_unnamed_nbt(PacketReader(raw)) == {"a": 1}
 
 
+def test_modified_utf8_java_write_utf_vector_for_name_and_value() -> None:
+    text = "\0𝄞"
+    encoded = b"\xc0\x80\xed\xa0\xb4\xed\xb4\x9e"
+    expected = b"\x08\x00\x08" + encoded + b"\x00\x08" + encoded
+
+    assert write_named_nbt(text, text) == expected
+    result = read_named_nbt(PacketReader(expected))
+    assert result.name == text
+    assert result.value == text
+
+
+@pytest.mark.parametrize(
+    "encoded",
+    [b"\x00", b"\xc2", b"\xc2A", b"\xe0\x80\x80", b"\xf0\x9d\x84\x9e"],
+)
+def test_malformed_modified_utf8_rejected(encoded: bytes) -> None:
+    raw = b"\x08\x00\x00" + len(encoded).to_bytes(2, "big") + encoded
+    with pytest.raises(MalformedPacket, match="Modified UTF-8"):
+        read_named_nbt(PacketReader(raw))
+
+
+def test_modified_utf8_uses_unsigned_short_encoded_byte_limit() -> None:
+    maximum = "a" * 0xFFFF
+    raw = write_named_nbt("", maximum)
+    assert raw[3:5] == b"\xff\xff"
+    assert read_named_nbt(PacketReader(raw)).value == maximum
+
+    with pytest.raises(MalformedPacket, match="too long"):
+        write_named_nbt("", "\0" * 0x8000)
+
+
 def test_empty_list_of_end_tag() -> None:
     # A list with element type 0 and length 0 is legal.
     raw = b"\x00\x00\x00"  # TAG_End? -> empty document handled by reader

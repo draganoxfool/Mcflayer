@@ -14,22 +14,21 @@ import asyncio
 import logging
 import time
 from collections.abc import Callable
-from typing import ParamSpec, TypeVar
+from typing import Any, TypeVar
 
 __all__ = ["run_cpu"]
 
-P = ParamSpec("P")
 T = TypeVar("T")
 
 _log = logging.getLogger("pyflayer._internal.cpu")
 
 
 async def run_cpu(
-    func: Callable[P, T],
+    func: Callable[..., T],
     /,
-    *args: P.args,
+    *args: Any,
     budget_ms: float | None = None,
-    **kwargs: P.kwargs,
+    **kwargs: Any,
 ) -> T:
     """Run ``func`` in a worker thread and return its result.
 

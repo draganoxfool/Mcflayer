@@ -7,6 +7,7 @@ from pyflayer.data import McData
 from pyflayer.errors import ChunkNotLoaded, OutOfWorldBounds
 from pyflayer.models.vec3 import BlockPos, ChunkPos, Vec3
 from pyflayer.protocol.native.chunk_data import decode_legacy_chunk
+from pyflayer.protocol.types.nbt import write_named_nbt
 from pyflayer.world import (
     Bounds,
     ChunkColumn,
@@ -59,6 +60,35 @@ def test_decode_short_payload_raises() -> None:
 
     with pytest.raises(MalformedPacket):
         decode_legacy_chunk(b"\x00" * 10, 1 << 4, sky_light=True, include_biomes=True)
+
+
+def test_decode_chunk_tail_bytes_are_preserved_without_block_entity_inference() -> None:
+    first = {"id": "Sign", "x": 3, "y": 65, "z": 7, "Text1": "hello"}
+    second = {"id": "Chest", "x": 12, "y": 20, "z": 1, "CustomName": "store"}
+    tail = write_named_nbt("", first) + write_named_nbt("", second)
+    chunk, bit_map = one_section_chunk()
+
+    decoded = decode_legacy_chunk(
+        chunk + tail, bit_map, sky_light=True, include_biomes=True
+    )
+
+    assert decoded.block_entities == ()
+    assert decoded.trailing == tail
+
+
+def test_decode_arbitrary_chunk_tail_bytes_are_preserved() -> None:
+    entity = {"id": "Sign", "x": 3, "y": 65, "z": 7}
+    malformed_tail = b"\x0a"
+
+    decoded = decode_legacy_chunk(
+        write_named_nbt("", entity) + malformed_tail,
+        0,
+        sky_light=False,
+        include_biomes=False,
+    )
+
+    assert decoded.block_entities == ()
+    assert decoded.trailing == write_named_nbt("", entity) + malformed_tail
 
 
 def test_section_index_order_and_cow() -> None:

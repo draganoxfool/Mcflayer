@@ -18,6 +18,7 @@ count field), ``container``, ``switch``, ``option``, ``bitfield``, ``bitflags``,
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -141,7 +142,7 @@ class _ArrayCodec:
         return [self.element.read(reader, ctx) for _ in range(length)]
 
     def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
-        items = list(value)  # type: ignore[call-overload]
+        items = list(value)
         if self.count_field is None:
             assert self.count is not None
             self.count.write(writer, len(items), ctx)
@@ -276,7 +277,15 @@ class _BitfieldCodec:
 
     def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
         if not isinstance(value, dict):
-            raise TypeError("bitfield value must be a dict")
+            # ``position`` is a bitfield in 1.8 data. Accept the same value types as the native
+            # position writer (``BlockPos``/``Vec3``) as well as the decoded dict form.
+            if all(hasattr(value, field["name"]) for field in self.fields):
+                value = {
+                    str(field["name"]): getattr(value, str(field["name"]))
+                    for field in self.fields
+                }
+            else:
+                raise TypeError("bitfield value must be a dict")
         packed = 0
         remaining = self.total_bits
         for entry in self.fields:
@@ -315,6 +324,279 @@ class _BitflagsCodec:
             if value.get(str(flag["name"])):
                 packed |= ((1 << size) - 1) << remaining
         _write_packed_bits(writer, packed, self.total_bits)
+
+
+class _BitflagsDictCodec:
+    """``bitflags`` in ``{"type": "u32", "flags": [...]}`` form (1.13+).
+
+    The underlying field is a plain integer; ``flags[0]`` is the least-significant bit.
+    """
+
+    __slots__ = ("flags", "inner")
+
+    def __init__(self, inner: Codec, flags: list[str]) -> None:
+        self.inner = inner
+        self.flags = flags
+
+    def read(self, reader: PacketReader, ctx: Ctx) -> dict[str, bool]:
+        packed = int(self.inner.read(reader, ctx))
+        return {name: bool((packed >> index) & 1) for index, name in enumerate(self.flags)}
+
+    def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
+        if not isinstance(value, dict):
+            raise TypeError("bitflags value must be a dict")
+        packed = 0
+        for index, name in enumerate(self.flags):
+            if value.get(name):
+                packed |= 1 << index
+        self.inner.write(writer, packed, ctx)
+
+
+class _DeferredCodec:
+    """Late-bound codec for recursive types (e.g. ``SlotDisplay``).
+
+    While a type is being compiled its cache entry does not exist yet; recursion gets this wrapper
+    and resolves it on first use, once the outer compile has finished and cached the real codec.
+    """
+
+    __slots__ = ("_codec", "compiler", "direction", "name", "state")
+
+    def __init__(
+        self, compiler: ProtocolCompiler, name: str, state: str, direction: str
+    ) -> None:
+        self.compiler = compiler
+        self.name = name
+        self.state = state
+        self.direction = direction
+        self._codec: Codec | None = None
+
+    def _resolve(self) -> Codec:
+        if self._codec is None:
+            self._codec = self.compiler._compile_named(self.name, self.state, self.direction)
+        return self._codec
+
+    def read(self, reader: PacketReader, ctx: Ctx) -> Any:
+        return self._resolve().read(reader, ctx)
+
+    def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
+        self._resolve().write(writer, value, ctx)
+
+
+class _OptionalAnonNbtCodec:
+    """``anonOptionalNbt``: a presence bool followed by nameless network NBT."""
+
+    __slots__ = ("_nbt",)
+
+    def __init__(self) -> None:
+        self._nbt = _NbtCodec(named=False)
+
+    def read(self, reader: PacketReader, ctx: Ctx) -> Any:
+        if not reader.read_bool():
+            return None
+        return self._nbt.read(reader, ctx)
+
+    def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
+        if value is None:
+            writer.write_bool(False)
+            return
+        writer.write_bool(True)
+        self._nbt.write(writer, value, ctx)
+
+
+_LP_VEC_MAX_QUANTIZED = 32766.0
+_LP_VEC_ABS_MIN = 3.051944088384301e-5
+_LP_VEC_ABS_MAX = 1.7179869183e10
+
+
+class _LpVec3Codec:
+    """``lpVec3``: 48-bit quantized vector used by modern entity packets."""
+
+    __slots__ = ()
+
+    @staticmethod
+    def _unpack(packed: int, shift: int) -> float:
+        quantized = min((packed >> shift) & 0x7FFF, int(_LP_VEC_MAX_QUANTIZED))
+        return (quantized * 2.0) / _LP_VEC_MAX_QUANTIZED - 1.0
+
+    def read(self, reader: PacketReader, ctx: Ctx) -> dict[str, float]:
+        a = reader.read_u8()
+        if a == 0:
+            return {"x": 0.0, "y": 0.0, "z": 0.0}
+        b = reader.read_u8()
+        c = reader.read_u32()
+        packed = (c << 16) | (b << 8) | a
+        scale = a & 3
+        if a & 4:
+            scale = (reader.read_varint() * 4) + scale
+        return {
+            "x": self._unpack(packed, 3) * scale,
+            "y": self._unpack(packed, 18) * scale,
+            "z": self._unpack(packed, 33) * scale,
+        }
+
+    def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
+        if not isinstance(value, dict):
+            raise TypeError("lpVec3 value must be a dict with x/y/z")
+        x = _sanitize_vec(float(value.get("x", 0.0)))
+        y = _sanitize_vec(float(value.get("y", 0.0)))
+        z = _sanitize_vec(float(value.get("z", 0.0)))
+        largest = max(abs(x), abs(y), abs(z))
+        if largest < _LP_VEC_ABS_MIN:
+            writer.write_u8(0)
+            return
+        scale = math.ceil(largest)
+        needs_continuation = scale > 3
+        markers = (scale % 4) | 4 if needs_continuation else scale
+
+        def pack(component: float) -> int:
+            return round((component * 0.5 + 0.5) * _LP_VEC_MAX_QUANTIZED)
+
+        packed = (
+            markers
+            + pack(x / scale) * 0x8
+            + pack(y / scale) * 0x40000
+            + pack(z / scale) * 0x200000000
+        )
+        writer.write_u8(packed & 0xFF)
+        writer.write_u8((packed >> 8) & 0xFF)
+        writer.write_u32((packed >> 16) & 0xFFFFFFFF)
+        if needs_continuation:
+            writer.write_varint(scale // 4)
+
+
+def _sanitize_vec(value: float) -> float:
+    if math.isnan(value):
+        return 0.0
+    return max(-_LP_VEC_ABS_MAX, min(value, _LP_VEC_ABS_MAX))
+
+
+class _TopBitSetTerminatedArrayCodec:
+    """``topBitSetTerminatedArray``: elements chained by the high bit of their first byte."""
+
+    __slots__ = ("element",)
+
+    def __init__(self, element: Codec) -> None:
+        self.element = element
+
+    def read(self, reader: PacketReader, ctx: Ctx) -> list[Any]:
+        values: list[Any] = []
+        while True:
+            header = reader.read_u8()
+            reader.unread_bytes(bytes((header & 0x7F,)))
+            values.append(self.element.read(reader, ctx))
+            if not header & 0x80:
+                return values
+
+    def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
+        items = list(value)
+        for index, item in enumerate(items):
+            if index != len(items) - 1:
+                # Only the first byte of an element carries the continuation bit. The element
+                # codec starts at that byte, so write it with the bit already set.
+                temp = PacketWriter(features=writer.features)
+                self.element.write(temp, item, ctx)
+                data = bytearray(temp.to_bytes())
+                data[0] |= 0x80
+                writer.write_bytes(bytes(data))
+            else:
+                self.element.write(writer, item, ctx)
+
+
+class _RegistryEntryHolderCodec:
+    """``registryEntryHolder``: an inline registry id or embedded data."""
+
+    __slots__ = ("base_name", "otherwise", "otherwise_name")
+
+    def __init__(self, base_name: str, otherwise_name: str, otherwise: Codec) -> None:
+        self.base_name = base_name
+        self.otherwise_name = otherwise_name
+        self.otherwise = otherwise
+
+    def read(self, reader: PacketReader, ctx: Ctx) -> dict[str, Any]:
+        holder = reader.read_varint()
+        if holder != 0:
+            return {self.base_name: holder - 1}
+        return {self.otherwise_name: self.otherwise.read(reader, ctx)}
+
+    def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
+        if not isinstance(value, dict):
+            raise TypeError("registryEntryHolder value must be a dict")
+        base = value.get(self.base_name)
+        if base is not None:
+            writer.write_varint(int(base) + 1)
+            return
+        inline = value.get(self.otherwise_name)
+        if inline is None:
+            raise ValueError(
+                f"registryEntryHolder requires {self.base_name!r} or {self.otherwise_name!r}"
+            )
+        writer.write_varint(0)
+        self.otherwise.write(writer, inline, ctx)
+
+
+class _RegistryEntryHolderSetCodec:
+    """``registryEntryHolderSet``: one registry name or a list of inline ids."""
+
+    __slots__ = ("base", "base_name", "otherwise", "otherwise_name")
+
+    def __init__(
+        self, base_name: str, base: Codec, otherwise_name: str, otherwise: Codec
+    ) -> None:
+        self.base_name = base_name
+        self.base = base
+        self.otherwise_name = otherwise_name
+        self.otherwise = otherwise
+
+    def read(self, reader: PacketReader, ctx: Ctx) -> dict[str, Any]:
+        count = reader.read_varint()
+        if count == 0:
+            return {self.base_name: self.base.read(reader, ctx)}
+        return {
+            self.otherwise_name: [self.otherwise.read(reader, ctx) for _ in range(count - 1)]
+        }
+
+    def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
+        if not isinstance(value, dict):
+            raise TypeError("registryEntryHolderSet value must be a dict")
+        base = value.get(self.base_name)
+        if base is not None:
+            writer.write_varint(0)
+            self.base.write(writer, base, ctx)
+            return
+        inline = value.get(self.otherwise_name)
+        if inline is None:
+            raise ValueError(
+                f"registryEntryHolderSet requires {self.base_name!r} or "
+                f"{self.otherwise_name!r}"
+            )
+        items = list(inline)
+        writer.write_varint(len(items) + 1)
+        for item in items:
+            self.otherwise.write(writer, item, ctx)
+
+
+class _EntityMetadataLoopCodec:
+    """Modern ``entityMetadataLoop`` parametrized by ``{type, endVal}``."""
+
+    __slots__ = ("element", "end_value")
+
+    def __init__(self, element: Codec, end_value: int) -> None:
+        self.element = element
+        self.end_value = end_value
+
+    def read(self, reader: PacketReader, ctx: Ctx) -> list[Any]:
+        values: list[Any] = []
+        while True:
+            header = reader.read_u8()
+            if header == self.end_value:
+                return values
+            reader.unread_bytes(bytes((header,)))
+            values.append(self.element.read(reader, ctx))
+
+    def write(self, writer: PacketWriter, value: Any, ctx: Ctx) -> None:
+        for item in value:
+            self.element.write(writer, item, ctx)
+        writer.write_u8(self.end_value)
 
 
 class _MapperCodec:
@@ -430,16 +712,28 @@ class ProtocolCompiler:
         override = self.native_packets.get((state, direction, name))
         if override is not None:
             return override
-        type_name = f"packet_{name}"
-        types = self.protocol.types(state, direction)
-        if type_name not in types:
+        key = (state, direction, f"@packet:{name}")
+        cached = self._cache.get(key)
+        if cached is not None:
+            return cached
+        specs = packet_specs(self.protocol, state, direction)
+        spec = specs.get(name)
+        if spec is None:
             raise UnsupportedType(
-                f"packet {name!r} has no {type_name} type",
-                type_name=type_name,
+                f"packet {name!r} is not declared for {state}/{direction}",
+                type_name=name,
                 state=state,
                 direction=direction,
             )
-        return self._compile_named(type_name, state, direction)
+        if key in self._compiling:
+            raise UnsupportedType("recursive protodef type", type_name=name)
+        self._compiling.add(key)
+        try:
+            codec = self._compile(spec, state, direction)
+        finally:
+            self._compiling.discard(key)
+        self._cache[key] = codec
+        return codec
 
     def compile_state(self, state: str, direction: str) -> CompileReport:
         """Compile every packet type in one state/direction."""
@@ -463,10 +757,40 @@ class ProtocolCompiler:
             name = spec[0]
             params = spec[1] if len(spec) > 1 else None
             if isinstance(name, str):
+                local = self.protocol.types(state, direction)
+                declared = local.get(name, self.protocol.global_types.get(name))
+                # Native parameterized types ("container", "switch", "array", ...) carry their
+                # parameters in ``params``. Only a non-native named type is compiled through the
+                # name lookup; otherwise the params would be dropped and the type read nothing.
+                if declared is not None and declared != "native":
+                    return self._compile_parametrized(name, params, state, direction)
                 return self._compile_native(name, params, state, direction)
             # ["container", [...]] etc. are strings; a nested list head is unusual.
             raise UnsupportedType("unsupported protodef type head", type_name=str(name))
         raise UnsupportedType("unsupported protodef type", type_name=repr(spec))
+
+    def _compile_parametrized(
+        self, name: str, params: Any, state: str, direction: str
+    ) -> Codec:
+        """Compile ``[name, params]`` for a named type (proto's parameterized types).
+
+        ``minecraft-data`` uses this for ``$compareTo`` switches such as ``entityMetadataItem``
+        and ``particleData``: the caller supplies the context field through ``params``.
+        """
+        spec = self.protocol.types(state, direction).get(name)
+        if spec is None:
+            spec = self.protocol.global_types.get(name)
+        if (
+            isinstance(params, dict)
+            and isinstance(spec, (list, tuple))
+            and spec
+            and spec[0] == "switch"
+            and isinstance(spec[1], dict)
+        ):
+            body = dict(spec[1])
+            body.update(params)
+            return self._compile(["switch", body], state, direction)
+        return self._compile_named(name, state, direction)
 
     def _compile_named(self, name: str, state: str, direction: str) -> Codec:
         key = (state, direction, name)
@@ -475,14 +799,14 @@ class ProtocolCompiler:
         if name == "slot":
             # The native slot codec produces immutable ItemStack values; the JSON slot container
             # would expose raw blockId/itemCount dicts to every caller of the registry.
-            codec = _SlotCodec(self.features)
-            self._cache[key] = codec
-            return codec
+            slot_codec: Codec = _SlotCodec(self.features)
+            self._cache[key] = slot_codec
+            return slot_codec
         local = self.protocol.types(state, direction)
         if name in local:
             spec = local[name]
             if key in self._compiling:
-                raise UnsupportedType("recursive protodef type", type_name=name)
+                return _DeferredCodec(self, name, state, direction)
             self._compiling.add(key)
             try:
                 codec = self._compile(spec, state, direction)
@@ -493,7 +817,16 @@ class ProtocolCompiler:
         if name in self.protocol.global_types:
             spec = self.protocol.global_types[name]
             if not isinstance(spec, str) or spec != "native":
-                return self._compile(spec, state, direction)
+                gkey = (state, direction, f"@global:{name}")
+                if gkey in self._compiling:
+                    return _DeferredCodec(self, name, state, direction)
+                self._compiling.add(gkey)
+                try:
+                    codec = self._compile(spec, state, direction)
+                finally:
+                    self._compiling.discard(gkey)
+                self._cache[key] = codec
+                return codec
         return self._compile_native(name, None, state, direction)
 
     def _compile_native(self, name: str, params: Any, state: str, direction: str) -> Codec:
@@ -592,6 +925,10 @@ class ProtocolCompiler:
         if name == "bitfield":
             return _BitfieldCodec(list(params or []))
         if name == "bitflags":
+            if isinstance(params, dict):
+                inner = self._compile(params.get("type", "varint"), state, direction)
+                flags = [str(flag) for flag in params.get("flags", [])]
+                return _BitflagsDictCodec(inner, flags)
             return _BitflagsCodec(list(params or []))
         if name == "mapper":
             inner = self._compile(p.get("type", "varint"), state, direction)
@@ -607,7 +944,47 @@ class ProtocolCompiler:
             )
         if name == "slot":
             return _SlotCodec(self.features)
+        if name == "anonOptionalNbt":
+            return _OptionalAnonNbtCodec()
+        if name == "lpVec3":
+            return _LpVec3Codec()
+        if name == "topBitSetTerminatedArray":
+            element = self._compile(p.get("type", "u8"), state, direction)
+            return _TopBitSetTerminatedArrayCodec(element)
+        if name == "registryEntryHolder":
+            base_name = str(p.get("baseName", "id"))
+            otherwise = p.get("otherwise")
+            if not isinstance(otherwise, dict):
+                raise UnsupportedType(
+                    "registryEntryHolder needs an 'otherwise' mapping", type_name=name
+                )
+            inner = self._compile(otherwise.get("type", "void"), state, direction)
+            return _RegistryEntryHolderCodec(
+                base_name, str(otherwise.get("name", "data")), inner
+            )
+        if name == "registryEntryHolderSet":
+            base = p.get("base")
+            otherwise = p.get("otherwise")
+            if not isinstance(base, dict) or not isinstance(otherwise, dict):
+                raise UnsupportedType(
+                    "registryEntryHolderSet needs 'base' and 'otherwise' mappings", type_name=name
+                )
+            base_codec = self._compile(base.get("type", "void"), state, direction)
+            inner = self._compile(otherwise.get("type", "void"), state, direction)
+            return _RegistryEntryHolderSetCodec(
+                str(base.get("name", "name")),
+                base_codec,
+                str(otherwise.get("name", "ids")),
+                inner,
+            )
         if name == "entityMetadataLoop":
+            if (
+                isinstance(params, dict)
+                and "type" in params
+                and int(params.get("endVal", 255)) != 127
+            ):
+                element = self._compile(params["type"], state, direction)
+                return _EntityMetadataLoopCodec(element, int(params.get("endVal", 0xFF)))
             from pyflayer.protocol.native.entity_metadata import EntityMetadataLoopCodec
 
             return EntityMetadataLoopCodec()
@@ -637,13 +1014,36 @@ def _looks_like_type(text: str) -> bool:
     }
 
 
+def packet_specs(protocol: ProtocolSchema, state: str, direction: str) -> dict[str, Any]:
+    """Map packet name -> parameter type spec from the top-level ``packet`` container.
+
+    Modern data reuses shared types (``packet_common_settings``), so the packet's type is not always
+    ``packet_<name>``.
+    """
+    spec = protocol.packet_type(state, direction)
+    if not isinstance(spec, (list, tuple)) or len(spec) < 2:
+        return {}
+    fields = spec[1]
+    if not isinstance(fields, list):
+        return {}
+    for entry in fields:
+        if not isinstance(entry, dict) or entry.get("name") != "params":
+            continue
+        type_spec = entry.get("type")
+        if not isinstance(type_spec, (list, tuple)) or len(type_spec) < 2:
+            continue
+        params = type_spec[1]
+        if not isinstance(params, dict):
+            continue
+        switch_fields = params.get("fields")
+        if isinstance(switch_fields, dict):
+            return {str(name): value for name, value in switch_fields.items()}
+    return {}
+
+
 def packet_names(protocol: ProtocolSchema, state: str, direction: str) -> list[str]:
     """Names of packets declared for a state/direction."""
-    names: list[str] = []
-    for type_name in protocol.types(state, direction):
-        if type_name.startswith("packet_") and type_name != "packet":
-            names.append(type_name[len("packet_") :])
-    return names
+    return list(packet_specs(protocol, state, direction))
 
 
 def packet_mappings(protocol: ProtocolSchema, state: str, direction: str) -> dict[int, str]:

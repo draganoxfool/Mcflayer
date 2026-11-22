@@ -50,6 +50,7 @@ from pyflayer.data.schema import (
 from pyflayer.data.shapes import ShapeTable
 from pyflayer.data.versions import VersionInfo, normalize, version_key
 from pyflayer.errors import DataError, UnsupportedVersion
+from pyflayer.models import AABB
 
 __all__ = ["McData", "ProtocolSchema", "default_data_dir"]
 
@@ -156,9 +157,9 @@ class McData:
         """Shortcut for ``self.features.supports(feature)``."""
         return self.features.supports(feature)
 
-    def collision_boxes(self, state_id: int):
-        """Legacy collision boxes for a block state id (1.8); M3 adds modern state ids."""
-        return self.shapes.boxes_for_legacy_state(state_id, self.blocks)
+    def collision_boxes(self, state_id: int) -> tuple[AABB, ...]:
+        """Collision boxes for a legacy (1.8) or modern global block-state id."""
+        return self.shapes.boxes_for_state(state_id, self.blocks)
 
 
 @lru_cache(maxsize=8)

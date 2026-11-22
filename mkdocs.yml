@@ -51,6 +51,7 @@ nav:
       - Physics: modules/physics.md
       - Commands: modules/commands.md
       - Tasks: modules/tasks.md
+      - Swarm: modules/swarm.md
   - API reference:
       - Overview: reference/index.md
       - pyflayer: reference/pyflayer.md
@@ -69,6 +70,7 @@ nav:
       - CLI: reference/cli.md
       - Commands: reference/commands.md
       - Tasks: reference/tasks.md
+      - Swarm: reference/swarm.md
   - Project:
       - Architecture: ARCHITECTURE.md
       - Roadmap: ROADMAP.md
@@ -83,6 +85,7 @@ nav:
           - M3: handoff/M3.md
           - M4: handoff/M4.md
           - M5: handoff/M5.md
+          - M7: handoff/M7.md
 
 markdown_extensions:
   - admonition

@@ -107,10 +107,12 @@ class FakeServer:
 
     async def stop(self) -> None:
         """Stop the listener and close every connection."""
-        if self._server is not None:
-            self._server.close()
-            await self._server.wait_closed()
-            self._server = None
+        server = self._server
+        self._server = None
+        if server is not None:
+            server.close()
+        # ``Server.wait_closed`` waits for accepted connections on Python 3.13+, so close them
+        # before awaiting it. Otherwise a test that exits mid-scenario deadlocks in teardown.
         for conn in self._connections:
             await conn.close()
         self._connections.clear()
@@ -118,6 +120,9 @@ class FakeServer:
             task.cancel()
         if self._tasks:
             await asyncio.gather(*self._tasks, return_exceptions=True)
+        self._tasks.clear()
+        if server is not None:
+            await server.wait_closed()
 
     async def __aenter__(self) -> FakeServer:
         return await self.start()

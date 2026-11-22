@@ -61,7 +61,7 @@ class ProtocolClient:
         clock: Injected clock.
         connect_timeout: TCP connect timeout.
         read_timeout: Per-frame read timeout (``None`` waits forever; keep-alives still arrive).
-        use_compression: Advertise support for the server's compression request.
+        use_compression: Legacy option; server-mandated compression is always applied.
     """
 
     __slots__ = (
@@ -230,8 +230,7 @@ class ProtocolClient:
             packet = await self.read_packet()
             if packet.name == "set_compression":
                 threshold = int(packet.fields.get("threshold", -1))
-                if self.use_compression:
-                    self.set_compression(threshold)
+                self.set_compression(threshold)
                 continue
             if packet.name.startswith(("unknown_0x", "unsupported_")):
                 continue
@@ -288,9 +287,8 @@ class ProtocolClient:
                 continue
             if name == "compress":
                 threshold = int(packet.fields.get("threshold", -1))
-                if self.use_compression:
-                    self.set_compression(threshold)
-                    log.debug("compression enabled (threshold=%d)", threshold)
+                self.set_compression(threshold)
+                log.debug("compression enabled (threshold=%d)", threshold)
                 continue
             if name == "success":
                 assert self.session is not None
@@ -312,8 +310,8 @@ class ProtocolClient:
 
     async def _enable_encryption(self, packet: Packet) -> None:
         assert self.session is not None
-        public_key = bytes(packet.fields["publicKey"])  # type: ignore[arg-type]
-        verify_token = bytes(packet.fields["verifyToken"])  # type: ignore[arg-type]
+        public_key = bytes(packet.fields["publicKey"])
+        verify_token = bytes(packet.fields["verifyToken"])
         server_id = str(packet.fields.get("serverId", ""))
         shared_secret = os.urandom(16)
         digest = server_hash(server_id, shared_secret, public_key)

@@ -17,7 +17,7 @@ from typing import Any
 
 from pyflayer.data.loader import McData
 from pyflayer.models.items import ItemStack
-from pyflayer.models.vec3 import Vec3
+from pyflayer.models.vec3 import BlockPos, Vec3
 
 __all__ = ["POSITION_SCALE", "ROTATION_SCALE", "Entity", "EntityTracker"]
 
@@ -47,7 +47,7 @@ class Entity:
     mount: int | None = None
 
     @property
-    def block_pos(self):
+    def block_pos(self) -> BlockPos:
         """Block containing the entity."""
         return self.position.floored()
 

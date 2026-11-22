@@ -112,7 +112,7 @@ class FoodJson(msgspec.Struct, frozen=True, omit_defaults=True):
     name: str
     displayName: str = ""
     stackSize: int = 64
-    foodPoints: int = 0
+    foodPoints: float = 0.0
     saturation: float = 0.0
     effectiveQuality: float = 0.0
     saturationRatio: float = 0.0

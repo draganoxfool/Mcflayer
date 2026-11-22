@@ -175,6 +175,69 @@ async def test_stream_and_overflow() -> None:
     await stream.aclose()
 
 
+async def test_stream_break_with_retained_reference_unsubscribes() -> None:
+    bus = EventBus()
+    stream = bus.stream(ChatEvent)
+
+    async with stream:
+
+        async def consume_one() -> None:
+            async for event in stream:
+                assert event.message.content == "first"
+                break
+
+        consumer = asyncio.create_task(consume_one())
+        await asyncio.sleep(0)
+        bus.dispatch(_chat("first"))
+        await consumer
+
+    assert bus.subscription_count == 0
+    bus.dispatch(_chat("after exit"))
+    assert stream._queue is not None
+    assert stream._queue.empty()
+    await bus.aclose()
+
+
+async def test_stream_context_exit_unsubscribes() -> None:
+    bus = EventBus()
+    stream = bus.stream(ChatEvent)
+
+    async with stream:
+        pending = asyncio.create_task(stream.__anext__())
+        await asyncio.sleep(0)
+        assert bus.subscription_count == 1
+        pending.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await pending
+
+    assert bus.subscription_count == 0
+    await bus.aclose()
+
+
+async def test_stream_async_for_delivers_events() -> None:
+    bus = EventBus()
+    stream = bus.stream(ChatEvent)
+    received: list[str] = []
+
+    async def collect_batch() -> None:
+        async for event in stream:
+            received.append(event.message.content)
+            if len(received) == 3:
+                break
+
+    async with stream:
+        consumer = asyncio.create_task(collect_batch())
+        await asyncio.sleep(0)
+        for text in ("one", "two", "three"):
+            bus.dispatch(_chat(text))
+            await asyncio.sleep(0)
+        await consumer
+
+    assert received == ["one", "two", "three"]
+    assert bus.subscription_count == 0
+    await bus.aclose()
+
+
 async def test_aclose_cancels_listener_tasks() -> None:
     bus = EventBus()
     started = asyncio.Event()

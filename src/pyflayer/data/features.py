@@ -47,6 +47,17 @@ class Features:
     compression_supported: bool = True
     #: Server teleports carry an id and the client answers with ``teleport_confirm`` (1.9+).
     teleport_confirm: bool = False
+    #: The client sends ``tick_end`` after its movement packet (1.21.2+, protocol 768+).
+    tick_end: bool = False
+    #: Paletted containers omit their data-array length prefix (1.21.5+, protocol 770+).
+    chunk_data_no_length_prefix: bool = False
+    #: Chunk sections carry a separate fluid count before the block count (26.1+).
+    chunk_fluid_count: bool = False
+    #: Chat uses ``chat_message`` / ``chat_command`` and the signed-chat packet family (1.19+).
+    modern_chat: bool = False
+    #: Default overworld minimum Y and height for this protocol family.
+    world_min_y: int = 0
+    world_height: int = 256
 
     @classmethod
     def for_version(cls, version: str | int) -> Features:
@@ -68,6 +79,12 @@ class Features:
             login_start_uuid=protocol >= 764,
             compression_supported=protocol >= 47,
             teleport_confirm=protocol >= 107,
+            tick_end=protocol >= 768,
+            chunk_data_no_length_prefix=protocol >= 770,
+            chunk_fluid_count=protocol >= 775,
+            modern_chat=protocol >= 759,
+            world_min_y=-64 if protocol >= 755 else 0,
+            world_height=384 if protocol >= 755 else 256,
         )
 
     def supports(self, name: str) -> bool:
@@ -102,11 +119,19 @@ _PROTOCOLS: dict[str, int] = {
     "1.19.4": 762,
     "1.20.1": 763,
     "1.20.4": 765,
+    "1.20.5": 766,
     "1.20.6": 766,
+    "1.21": 767,
     "1.21.1": 767,
+    "1.21.3": 768,
     "1.21.4": 769,
     "1.21.5": 770,
     "1.21.6": 771,
+    "1.21.8": 772,
+    "1.21.9": 773,
+    "1.21.10": 773,
+    "1.21.11": 774,
+    "26.1": 775,
 }
 
 

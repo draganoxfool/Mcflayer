@@ -28,6 +28,7 @@ from pyflayer.bot.inventory import (
     CURSOR_EVENT_SLOT,
     CURSOR_SLOT,
     HOTBAR_START,
+    PLAYER_INVENTORY_COPY_SIZE,
     ClickMode,
     Inventory,
 )
@@ -119,6 +120,9 @@ class Bot:
         reconnect: Reconnect with exponential backoff when ``run()`` loses the connection.
         max_backoff: Upper bound for reconnect delay, in seconds.
         join_timeout: How long :meth:`connect` waits for Join Game.
+        world: Injected world (a swarm shares one :class:`~pyflayer.swarm.SharedWorld`).
+        tick_driver: Injected tick driver. When supplied, the bot does not start its own physics
+            loop; the owner calls :meth:`physics_tick` for every driver tick (swarm mode).
     """
 
     __slots__ = (
@@ -131,6 +135,7 @@ class Bot:
         "_last_sprinting",
         "_physics_task",
         "_ready",
+        "_shared_tick_driver",
         "_teleport_id",
         "_teleport_pending",
         "attributes",
@@ -188,6 +193,8 @@ class Bot:
         reconnect: bool = False,
         max_backoff: float = 30.0,
         join_timeout: float = 20.0,
+        world: World | None = None,
+        tick_driver: TickDriver | None = None,
     ) -> None:
         self.username = username or ""
         self.host = host
@@ -218,7 +225,7 @@ class Bot:
         self.spawned = False
         self.players: dict[str, PlayerInfo] = {}
         mc = McData.load(version)
-        self.world = World(mc)
+        self.world = world if world is not None else World(mc)
         self.entities = EntityTracker(mc)
         self.inventory = Inventory()
         self.experience: tuple[float, int, int] = (0.0, 0, 0)
@@ -228,7 +235,8 @@ class Bot:
         self.physics_state: PlayerState | None = None
         self.controls = ControlState()
         self.movement = MovementTracker()
-        self.tick_driver: TickDriver | None = None
+        self._shared_tick_driver = tick_driver
+        self.tick_driver: TickDriver | None = tick_driver
         self._physics_task: asyncio.Task[None] | None = None
         self._jump_next = False
         self._last_sprinting = False
@@ -248,6 +256,11 @@ class Bot:
     def connected(self) -> bool:
         """True when the protocol client is connected."""
         return self.client is not None and self.client.connected
+
+    @property
+    def closed(self) -> bool:
+        """True after :meth:`close` (or a terminal kick) has been applied."""
+        return self._closed
 
     @property
     def state(self) -> BotState:
@@ -583,7 +596,7 @@ class Bot:
         self.physics_state = None
         self.controls = ControlState()
         self.movement = MovementTracker()
-        self.tick_driver = None
+        self.tick_driver = self._shared_tick_driver
         self._jump_next = False
         self._last_sprinting = False
         self._last_sneaking = False
@@ -596,12 +609,15 @@ class Bot:
         if task is not None and task is not asyncio.current_task():
             task.cancel()
             await asyncio.gather(task, return_exceptions=True)
-        if self.tick_driver is not None:
+        if self.tick_driver is not None and self._shared_tick_driver is None:
             self.tick_driver.stop()
             self.tick_driver = None
 
     def _ensure_physics_loop(self) -> None:
         if self.joined is False or self.client is None:
+            return
+        if self._shared_tick_driver is not None:
+            # Swarm mode: the cluster owns the driver and calls physics_tick().
             return
         if self._physics_task is not None and not self._physics_task.done():
             return
@@ -609,6 +625,14 @@ class Bot:
         self._physics_task = asyncio.create_task(
             self._run_physics(self.tick_driver), name=f"pyflayer-physics-{id(self):x}"
         )
+
+    async def physics_tick(self, tick: int = 0) -> None:
+        """Run one physics tick.
+
+        Public hook for a shared tick driver (see :mod:`pyflayer.swarm`). A bot with an injected
+        ``tick_driver`` never starts its own loop, so its owner calls this once per driver tick.
+        """
+        await self._physics_tick(tick)
 
     async def _run_physics(self, driver: TickDriver) -> None:
         try:
@@ -735,7 +759,7 @@ class Bot:
         self.entity_id = int(packet.fields.get("entityId", 0))
         self.game_mode = int(packet.fields.get("gameMode", 0))
         self.dimension = int(packet.fields.get("dimension", 0))
-        self.world.dimension = self.dimension
+        self.world.set_dimension(self.dimension)
         self.joined = True
         self._join_event = JoinEvent(
             entity_id=self.entity_id,
@@ -768,6 +792,18 @@ class Bot:
             return
         await self.client.send_packet(
             "keep_alive", {"keepAliveId": int(packet.fields.get("keepAliveId", 0))}
+        )
+
+    async def _on_transaction(self, packet: Packet) -> None:
+        if bool(packet.fields.get("accepted", False)) or self.client is None:
+            return
+        await self.client.send_packet(
+            "transaction",
+            {
+                "windowId": int(packet.fields.get("windowId", 0)),
+                "action": int(packet.fields.get("action", 0)),
+                "accepted": True,
+            },
         )
 
     async def _on_position(self, packet: Packet) -> None:
@@ -851,7 +887,7 @@ class Bot:
         self.dead = False
         self.dimension = int(packet.fields.get("dimension", self.dimension or 0))
         self.world.clear()
-        self.world.dimension = self.dimension
+        self.world.set_dimension(self.dimension)
         self.entities.clear()
         self.physics_state = None
         self.controls = ControlState()
@@ -966,7 +1002,6 @@ class Bot:
                 bit_map,
                 sky_light=sky_light,
                 include_biomes=True,
-                parse_block_entities=False,
             )
             offset += size
             pos = ChunkPos(int(entry.get("x", 0)), int(entry.get("z", 0)))
@@ -988,6 +1023,26 @@ class Bot:
         old = self.world.block_state_id_or(pos, 0)
         if self.world.set_block_state(pos, state_id):
             self.events.dispatch(BlockUpdateEvent(pos, state_id, old))
+
+    async def _on_tile_entity_data(self, packet: Packet) -> None:
+        """Store NBT on a loaded column; null data and unloaded columns are ignored."""
+        location = packet.fields.get("location")
+        if isinstance(location, BlockPos):
+            pos = location
+        elif isinstance(location, dict):
+            pos = BlockPos(
+                int(location.get("x", 0)),
+                int(location.get("y", 0)),
+                int(location.get("z", 0)),
+            )
+        else:
+            return
+
+        column = self.world.chunks.get(pos.chunk)
+        nbt = packet.fields.get("nbtData")
+        if column is None or not isinstance(nbt, dict):
+            return
+        column.block_entities[pos] = nbt
 
     async def _on_multi_block_change(self, packet: Packet) -> None:
         chunk = ChunkPos(int(packet.fields.get("chunkX", 0)), int(packet.fields.get("chunkZ", 0)))
@@ -1191,11 +1246,15 @@ class Bot:
     async def _on_open_window(self, packet: Packet) -> None:
         window_id = int(packet.fields.get("windowId", 0))
         title = ChatComponent.parse(packet.fields.get("windowTitle", "")).plain_text()
+        kind = str(packet.fields.get("inventoryType", ""))
+        container_slots = int(packet.fields.get("slotCount", 0))
+        if kind == "EntityHorse":
+            container_slots = max(container_slots, 2)
         self.inventory.open_window(
             window_id,
             title,
-            int(packet.fields.get("slotCount", 0)),
-            kind=str(packet.fields.get("inventoryType", "")),
+            container_slots + PLAYER_INVENTORY_COPY_SIZE,
+            kind=kind,
         )
 
     async def _on_close_window(self, packet: Packet) -> None:
@@ -1284,6 +1343,7 @@ def _metadata(value: object) -> dict[int, Any]:
 _HANDLERS: dict[str, Callable[[Bot, Packet], Awaitable[None]]] = {
     "login": Bot._on_join,
     "keep_alive": Bot._on_keep_alive,
+    "transaction": Bot._on_transaction,
     "position": Bot._on_position,
     "spawn_position": Bot._on_spawn_position,
     "chat": Bot._on_chat,
@@ -1295,6 +1355,7 @@ _HANDLERS: dict[str, Callable[[Bot, Packet], Awaitable[None]]] = {
     "map_chunk": Bot._on_chunk,
     "map_chunk_bulk": Bot._on_chunk_bulk,
     "block_change": Bot._on_block_change,
+    "tile_entity_data": Bot._on_tile_entity_data,
     "multi_block_change": Bot._on_multi_block_change,
     "spawn_entity": Bot._on_spawn_entity,
     "spawn_entity_living": Bot._on_spawn_entity_living,

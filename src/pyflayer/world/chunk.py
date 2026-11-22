@@ -14,6 +14,8 @@ Examples:
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import numpy as np
 
 from pyflayer.errors import OutOfWorldBounds
@@ -140,7 +142,11 @@ class ChunkColumn:
             )
         block_entities: dict[BlockPos, dict[str, object]] = {}
         for record in data.block_entities:
-            local = (int(record.get("x", 0)), int(record.get("y", 0)), int(record.get("z", 0)))
+            local = (
+                int(cast(Any, record.get("x", 0))),
+                int(cast(Any, record.get("y", 0))),
+                int(cast(Any, record.get("z", 0))),
+            )
             block_entities[BlockPos(pos.x * 16 + local[0], local[1], pos.z * 16 + local[2])] = (
                 record
             )
@@ -173,7 +179,11 @@ class ChunkColumn:
             )
         block_entities = dict(self.block_entities)
         for record in data.block_entities:
-            local = (int(record.get("x", 0)), int(record.get("y", 0)), int(record.get("z", 0)))
+            local = (
+                int(cast(Any, record.get("x", 0))),
+                int(cast(Any, record.get("y", 0))),
+                int(cast(Any, record.get("z", 0))),
+            )
             block_entities[
                 BlockPos(self.pos.x * 16 + local[0], local[1], self.pos.z * 16 + local[2])
             ] = record

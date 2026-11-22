@@ -17,7 +17,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
 try:  # cryptography >= 45 moved CFB8 to the decrepit namespace
     from cryptography.hazmat.decrepit.ciphers.modes import CFB8
 except ImportError:  # pragma: no cover - older cryptography
-    from cryptography.hazmat.primitives.ciphers.modes import CFB8  # type: ignore[assignment]
+    from cryptography.hazmat.primitives.ciphers.modes import CFB8
 
 __all__ = ["AES_CFB8", "CipherPair", "encrypt_rsa"]
 

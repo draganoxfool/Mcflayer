@@ -19,9 +19,7 @@ List                          :class:`NBTList` (keeps the element tag type)
 Compound                      ``dict[str, object]``
 ============================  ==========================================
 
-Strings are decoded as standard UTF-8, not Java's Modified UTF-8; lone surrogates are therefore
-rejected. This is documented in ``docs/modules/protocol.md`` and matches what vanilla servers send
-in practice.
+Strings use Java's Modified UTF-8 encoding, as implemented by ``DataInput``/``DataOutput``.
 
 Examples:
     >>> data = write_named_nbt("", {"Level": 1, "Name": "test"})
@@ -34,8 +32,9 @@ from __future__ import annotations
 
 import math
 import struct
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Protocol, Self
+from typing import Any, Protocol, Self, cast
 
 from pyflayer.errors import MalformedPacket
 
@@ -79,7 +78,7 @@ TAG_INT_ARRAY = 11
 TAG_LONG_ARRAY = 12
 
 MAX_DEPTH = 512
-MAX_STRING_CHARS = 32767
+MAX_STRING_BYTES = 0xFFFF
 
 
 class NBTReader(Protocol):
@@ -148,15 +147,65 @@ def _tag_for_value(value: object) -> int:
     raise TypeError(f"cannot infer NBT tag for {type(value).__name__}")
 
 
+def _decode_modified_utf8(raw: bytes) -> str:
+    code_units = bytearray()
+    index = 0
+    while index < len(raw):
+        first = raw[index]
+        if 0x01 <= first <= 0x7F:
+            code_units.extend((0, first))
+            index += 1
+            continue
+
+        if 0xC0 <= first <= 0xDF:
+            if index + 1 >= len(raw) or raw[index + 1] & 0xC0 != 0x80:
+                raise MalformedPacket("invalid Modified UTF-8 in NBT string", offset=index)
+            unit = ((first & 0x1F) << 6) | (raw[index + 1] & 0x3F)
+            if unit != 0 and unit < 0x80:
+                raise MalformedPacket("invalid Modified UTF-8 in NBT string", offset=index)
+            code_units.extend((unit >> 8, unit & 0xFF))
+            index += 2
+            continue
+
+        if 0xE0 <= first <= 0xEF:
+            if (
+                index + 2 >= len(raw)
+                or raw[index + 1] & 0xC0 != 0x80
+                or raw[index + 2] & 0xC0 != 0x80
+            ):
+                raise MalformedPacket("invalid Modified UTF-8 in NBT string", offset=index)
+            unit = ((first & 0x0F) << 12) | ((raw[index + 1] & 0x3F) << 6) | (raw[index + 2] & 0x3F)
+            if unit < 0x800:
+                raise MalformedPacket("invalid Modified UTF-8 in NBT string", offset=index)
+            code_units.extend((unit >> 8, unit & 0xFF))
+            index += 3
+            continue
+
+        raise MalformedPacket("invalid Modified UTF-8 in NBT string", offset=index)
+
+    return code_units.decode("utf-16-be", "surrogatepass")
+
+
+def _encode_modified_utf8(value: str) -> bytes:
+    utf16 = value.encode("utf-16-be", "surrogatepass")
+    encoded = bytearray()
+    for index in range(0, len(utf16), 2):
+        unit = (utf16[index] << 8) | utf16[index + 1]
+        if unit == 0:
+            encoded.extend((0xC0, 0x80))
+        elif unit <= 0x7F:
+            encoded.append(unit)
+        elif unit <= 0x7FF:
+            encoded.extend((0xC0 | (unit >> 6), 0x80 | (unit & 0x3F)))
+        else:
+            encoded.extend((0xE0 | (unit >> 12), 0x80 | ((unit >> 6) & 0x3F), 0x80 | (unit & 0x3F)))
+    return bytes(encoded)
+
+
 def _read_string(reader: NBTReader) -> str:
     length = reader.read_u16()
-    if length > MAX_STRING_CHARS * 4:
-        raise MalformedPacket("NBT string length exceeds limit", offset=None, length=length)
     raw = reader.read_bytes(length)
-    try:
-        return raw.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        raise MalformedPacket("invalid UTF-8 in NBT string", offset=exc.start) from exc
+    return _decode_modified_utf8(raw)
 
 
 def _read_payload(reader: NBTReader, tag: int, depth: int) -> object:
@@ -270,8 +319,8 @@ class _Writer:
         self.buf += struct.pack(">d", value)
 
     def string(self, value: str) -> None:
-        raw = value.encode("utf-8")
-        if len(raw) > 65535:
+        raw = _encode_modified_utf8(value)
+        if len(raw) > MAX_STRING_BYTES:
             raise MalformedPacket("NBT string too long to encode", length=len(raw))
         self.u16(len(raw))
         self.buf += raw
@@ -304,7 +353,7 @@ class _Writer:
                 raise TypeError("NBT double must be a number")
             self.f64(float(value))
         elif tag == TAG_BYTE_ARRAY:
-            raw = bytes(value)  # type: ignore[arg-type]
+            raw = bytes(cast(Any, value))
             self.i32(len(raw))
             self.buf += raw
         elif tag == TAG_STRING:
@@ -329,12 +378,12 @@ class _Writer:
                 self.payload(child_tag, child, depth + 1)
             self.u8(TAG_END)
         elif tag == TAG_INT_ARRAY:
-            items = tuple(value)  # type: ignore[arg-type]
+            items = tuple(cast(Iterable[Any], value))
             self.i32(len(items))
             for item in items:
                 self.i32(int(item))
         elif tag == TAG_LONG_ARRAY:
-            items = tuple(value)  # type: ignore[arg-type]
+            items = tuple(cast(Iterable[Any], value))
             self.i32(len(items))
             for item in items:
                 self.i64(int(item))

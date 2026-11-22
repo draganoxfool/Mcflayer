@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pyflayer.protocol.buffer import PacketReader, PacketWriter
 from pyflayer.protocol.client import ProtocolClient
 from pyflayer.protocol.connection import Connection, resolve_address
@@ -33,6 +35,9 @@ __all__ = [
     "ping",
     "resolve_address",
 ]
+
+if TYPE_CHECKING:
+    from pyflayer.protocol.status import ServerStatus, ping
 
 
 def __getattr__(name: str) -> object:

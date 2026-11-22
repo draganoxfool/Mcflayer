@@ -71,9 +71,10 @@ event = await bus.wait_for(ChatEvent, check=lambda e: e.message.sender == "Steve
 # Expect: register a waiter, then await
 waiter = bus.expect(RespawnEvent, timeout=5)
 
-# Stream events with bounded queue
-async for event in bus.stream(ChatEvent, maxsize=256):
-    ...
+# Stream events with bounded queue and scoped cleanup
+async with bus.stream(ChatEvent, maxsize=256) as events:
+    async for event in events:
+        ...
 
 # Close the bus
 await bus.aclose()

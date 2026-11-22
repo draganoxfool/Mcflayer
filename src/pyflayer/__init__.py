@@ -14,6 +14,8 @@ Examples:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pyflayer import errors
 from pyflayer.bot import Bot
 from pyflayer.data import Features, McData, VersionInfo
@@ -55,7 +57,7 @@ from pyflayer.world import (
     WorldSnapshot,
 )
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 PROTOCOL_VERSION = 47
 REFERENCE_VERSION = "1.8.9"
 
@@ -108,6 +110,9 @@ __all__ = [
     "errors",
     "ping",
 ]
+
+if TYPE_CHECKING:
+    from pyflayer.protocol.status import ServerStatus, ping
 
 
 def __getattr__(name: str) -> object:

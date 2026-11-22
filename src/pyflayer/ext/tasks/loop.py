@@ -12,9 +12,9 @@ import asyncio
 import inspect
 import logging
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
-from pyflayer.events.catalog import PhysicsTickEvent
+from pyflayer.events.catalog import ConnectEvent, DisconnectEvent, PhysicsTickEvent
 
 __all__ = ["MISSING", "Loop", "loop"]
 
@@ -91,7 +91,7 @@ class Loop:
         if bound is None:
             bound = _BoundLoop(self, instance)
             cache[self._cache_key] = bound
-        return bound
+        return cast(_BoundLoop, bound)
 
     def _standalone_bound(self) -> _BoundLoop:
         if self._standalone is None:
@@ -159,7 +159,19 @@ class Loop:
 class _BoundLoop:
     """A :class:`Loop` bound to one cog instance (or to nothing for a standalone loop)."""
 
-    __slots__ = ("_cancelled", "_current_loop", "_failed", "_instance", "_loop", "_task")
+    __slots__ = (
+        "_cancelled",
+        "_connection_changed",
+        "_connection_closed_at",
+        "_connection_managed",
+        "_connection_open",
+        "_current_loop",
+        "_failed",
+        "_instance",
+        "_loop",
+        "_subscriptions",
+        "_task",
+    )
 
     def __init__(self, loop: Loop, instance: Any) -> None:
         self._loop = loop
@@ -168,11 +180,16 @@ class _BoundLoop:
         self._cancelled = False
         self._failed = False
         self._current_loop = 0
+        self._connection_managed = False
+        self._connection_open = True
+        self._connection_changed = asyncio.Event()
+        self._connection_closed_at: float | None = None
+        self._subscriptions: list[Any] = []
 
     # ------------------------------------------------------------------ introspection
     @property
     def name(self) -> str:
-        return self._loop.name
+        return str(self._loop.name or "")
 
     @property
     def current_loop(self) -> int:
@@ -201,9 +218,15 @@ class _BoundLoop:
             raise RuntimeError(f"loop {self.name!r} is already running")
         self._cancelled = False
         self._failed = False
+        self._current_loop = 0
         self._loop._resume_flag = True
+        self._connection_managed = False
+        self._connection_open = True
+        self._connection_changed = asyncio.Event()
+        self._connection_closed_at = None
+        subscriptions = self._watch_connection()
         self._task = asyncio.create_task(
-            self._run(*args, **kwargs), name=f"pyflayer-loop-{self.name}"
+            self._run(args, kwargs, subscriptions), name=f"pyflayer-loop-{self.name}"
         )
         return self._task
 
@@ -216,6 +239,7 @@ class _BoundLoop:
         """Cancel the loop task immediately."""
         self._cancelled = True
         self._loop._resume_flag = False
+        self._unwatch_connection(self._subscriptions)
         if self._task is not None and not self._task.done():
             self._task.cancel()
 
@@ -241,7 +265,83 @@ class _BoundLoop:
             self.start()
 
     # ------------------------------------------------------------------ run loop
-    async def _run(self, *args: Any, **kwargs: Any) -> None:
+    def _watch_connection(self) -> list[Any]:
+        events = getattr(self.bot, "events", None)
+        if events is None or not hasattr(events, "subscribe"):
+            self._subscriptions = []
+            return self._subscriptions
+        self._connection_managed = True
+        self._subscriptions = [
+            events.subscribe(DisconnectEvent, self._on_disconnect, priority=1000, owner=self),
+            events.subscribe(ConnectEvent, self._on_connect, priority=1000, owner=self),
+        ]
+        return self._subscriptions
+
+    def _unwatch_connection(self, subscriptions: list[Any]) -> None:
+        events = getattr(self.bot, "events", None)
+        if events is not None and hasattr(events, "unsubscribe"):
+            for subscription in subscriptions:
+                events.unsubscribe(subscription)
+        if self._subscriptions is subscriptions:
+            self._subscriptions = []
+
+    def _connection_transition(self, opened: bool) -> None:
+        if self._connection_managed and self._connection_open == opened:
+            return
+        self._connection_managed = True
+        self._connection_open = opened
+        if not opened:
+            clock = getattr(self.bot, "clock", None)
+            self._connection_closed_at = (
+                clock.monotonic()
+                if clock is not None and hasattr(clock, "monotonic")
+                else asyncio.get_running_loop().time()
+            )
+        changed = self._connection_changed
+        self._connection_changed = asyncio.Event()
+        changed.set()
+
+    def _on_disconnect(self, event: DisconnectEvent) -> None:
+        del event
+        self._connection_transition(False)
+        if not self._loop.reconnect:
+            self.cancel()
+
+    def _on_connect(self, event: ConnectEvent) -> None:
+        del event
+        self._connection_transition(True)
+
+    async def _wait_until_connected(self) -> None:
+        while self._connection_managed and not self._connection_open:
+            changed = self._connection_changed
+            await changed.wait()
+
+    async def _wait_interruptibly(self, wait: Callable[[], Any]) -> bool:
+        while True:
+            await self._wait_until_connected()
+            if not self._connection_managed:
+                await wait()
+                return True
+            changed = self._connection_changed
+            operation = asyncio.create_task(wait())
+            transition = asyncio.create_task(changed.wait())
+            try:
+                done, _ = await asyncio.wait(
+                    (operation, transition), return_when=asyncio.FIRST_COMPLETED
+                )
+                if operation in done and self._connection_open:
+                    await operation
+                    return True
+                return False
+            finally:
+                for task in (operation, transition):
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(operation, transition, return_exceptions=True)
+
+    async def _run(
+        self, args: tuple[Any, ...], kwargs: dict[str, Any], subscriptions: list[Any]
+    ) -> None:
         loop = self._loop
         bound = (
             loop.func.__get__(self._instance, type(self._instance)) if self._instance else loop.func
@@ -252,6 +352,9 @@ class _BoundLoop:
                 if inspect.isawaitable(result):
                     await result
             while not self._cancelled:
+                await self._wait_until_connected()
+                if self._cancelled:
+                    break
                 if loop.count is not None and self._current_loop >= loop.count:
                     break
                 self._current_loop += 1
@@ -276,6 +379,7 @@ class _BoundLoop:
         except asyncio.CancelledError:
             raise
         finally:
+            self._unwatch_connection(subscriptions)
             if not self._cancelled and loop._after is not None:
                 result = loop._after(self)
                 if inspect.isawaitable(result):
@@ -291,20 +395,40 @@ class _BoundLoop:
         if loop.ticks:
             if bot is not None and hasattr(bot, "wait_for"):
                 for _ in range(loop.ticks):
-                    await bot.wait_for(PhysicsTickEvent)
+                    while not await self._wait_interruptibly(
+                        lambda: bot.wait_for(PhysicsTickEvent)
+                    ):
+                        pass
                 return
             clock = getattr(bot, "clock", None)
             if clock is not None:
-                await clock.sleep(loop.ticks / 20.0)
+                await self._wait_wall_time(clock, loop.ticks / 20.0)
             else:
-                await asyncio.sleep(loop.ticks / 20.0)
+                await self._wait_wall_time(asyncio, loop.ticks / 20.0)
             return
         delay = loop.seconds if loop.seconds is not None else 0.0
         clock = getattr(bot, "clock", None)
         if clock is not None:
-            await clock.sleep(delay)
+            await self._wait_wall_time(clock, delay)
         else:
-            await asyncio.sleep(delay)
+            await self._wait_wall_time(asyncio, delay)
+
+    async def _wait_wall_time(self, clock: Any, delay: float) -> None:
+        remaining = delay
+        while remaining > 0:
+            now = (
+                clock.monotonic if hasattr(clock, "monotonic") else asyncio.get_running_loop().time
+            )
+            started = now()
+            wait_delay = remaining
+            completed = await self._wait_interruptibly(
+                lambda wait_delay=wait_delay: clock.sleep(wait_delay)
+            )
+            if completed:
+                return
+            paused_at = self._connection_closed_at
+            elapsed = (paused_at if paused_at is not None else now()) - started
+            remaining = max(0.0, remaining - max(0.0, elapsed))
 
     def __repr__(self) -> str:
         return f"<Loop {self.name!r} running={self.is_running()} iterations={self._current_loop}>"

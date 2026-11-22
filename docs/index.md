@@ -7,15 +7,17 @@ command layer shaped like discord.py. This site is the split of the original sin
 > **Name:** the project and PyPI distribution are **`mcflayer`**. The import package remains
 > **`pyflayer`**, so code examples use `import pyflayer`.
 
-> **Status:** Milestones 1–5 are implemented against **Minecraft 1.8.9 / protocol 47**: transport,
+> **Status:** Milestones 1–5 and 7 are implemented against **Minecraft 1.8.9 / protocol 47**: transport,
 > framing/compression, AES-CFB8, the `minecraft-data` loader, protodef codecs, login and
 > offline/Microsoft auth, the event bus, a bot that joins and chats on PikaNetwork, world state
 > (chunks, blocks, entities, inventory, snapshots, raycast), deterministic physics with a
-> drift-compensated 20 TPS loop, and a discord.py-shaped command layer. The bot emits vanilla-style
-> movement packets, sprint/sneak `entity_action` changes and teleport confirmations. The roadmap's
-> 10-minute anti-cheat soak on a live vanilla/Paper server is the remaining environment-dependent
-> M4 gate. See the [module reference](modules/index.md), [session log](sessions.md) and
-> [task board](tasks.md). Pathfinding and swarm are design-only.
+> drift-compensated 20 TPS loop, a discord.py-shaped command layer, and multi-bot clusters with
+> shared chunk storage, staggered logins, claims, a blackboard and metrics. The bot emits
+> vanilla-style movement packets, sprint/sneak `entity_action` changes and teleport confirmations.
+> The roadmap's 10-minute anti-cheat soak on a live vanilla/Paper server and the 50-bot Paper soak
+> remain environment-dependent gates. See the [module reference](modules/index.md),
+> [session log](sessions.md) and [task board](tasks.md). Pathfinding and the action framework (M6)
+> are design-only.
 
 ## Design stance
 
@@ -68,9 +70,11 @@ These are the opinionated choices carried over from the original brief:
 | [Handoff M3](handoff/M3.md) | World/entity/inventory symbols, invariants and deferred work after M3. |
 | [Handoff M4](handoff/M4.md) | Physics/movement symbols, invariants, verification and deferred work after M4. |
 | [Handoff M5](handoff/M5.md) | Command/task symbols, dispatch and extension invariants, verification after M5. |
+| [Handoff M7](handoff/M7.md) | Swarm symbols, shared-world/tick invariants and deferred work after M7. |
 | [Physics](modules/physics.md) | M4 player state, controls, collision, media, tick driver and fidelity. |
 | [Commands](modules/commands.md) | M5 address-based dispatch, cogs, converters, checks, flags, help, extensions. |
 | [Tasks](modules/tasks.md) | M5 `tasks.loop` on wall time or physics ticks. |
+| [Swarm](modules/swarm.md) | M7 clusters, shared worlds, login staggering, claims, blackboard, metrics. |
 | [Migrating from discord.py](migrating-from-discordpy.md) | What carries over and what is deliberately gone. |
 
 ## Building these docs with MkDocs

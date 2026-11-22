@@ -7,9 +7,9 @@ wire order is::
     2048 bytes block light                    # nibbles
     2048 bytes sky light                      # when the packet says so
 
-``map_chunk`` follows with 256 biome bytes when it is a ground-up chunk, and may append block
-entities. ``map_chunk_bulk`` repeats sections + biomes for every entry in its metadata array and has
-no reliable per-chunk block-entity boundary, so trailing bytes are reported instead of guessed.
+``map_chunk`` follows with 256 biome bytes when it is a ground-up chunk. Block entities arrive in
+separate ``tile_entity_data`` packets; any bytes beyond the declared chunk layout are preserved as
+trailing data and are never interpreted as entities.
 
 Examples:
     >>> decode_legacy_chunk(bytes(4096 * 2 + 2048 * 2), 0b1, sky_light=True, include_biomes=True)
@@ -23,8 +23,6 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from pyflayer.errors import MalformedPacket
-from pyflayer.protocol.buffer import PacketReader
-from pyflayer.protocol.types.nbt import read_nbt
 
 __all__ = ["SECTION_BLOCKS", "LegacyChunkData", "decode_legacy_chunk"]
 
@@ -60,7 +58,7 @@ def decode_legacy_chunk(
         bit_map: 16-bit mask of present sections.
         sky_light: Whether each section carries 2048 sky-light bytes.
         include_biomes: Whether 256 biome bytes follow the sections.
-        parse_block_entities: Parse trailing block entities when their layout is recoverable.
+        parse_block_entities: Deprecated compatibility argument; trailing bytes are never parsed.
 
     Raises:
         MalformedPacket: When the payload is shorter than the declared sections/biomes.
@@ -110,48 +108,13 @@ def decode_legacy_chunk(
         biomes.setflags(write=False)
         offset += BIOME_BYTES
 
-    block_entities: tuple[dict[str, object], ...] = ()
     trailing = bytes(view[offset:])
-    if parse_block_entities and trailing:
-        block_entities, leftover = _parse_block_entities(trailing)
-        trailing = leftover
 
     return LegacyChunkData(
         sections=sections,
         block_light=block_light,
         sky_light=sky_lights,
         biomes=biomes,
-        block_entities=block_entities,
+        block_entities=(),
         trailing=trailing,
     )
-
-
-def _parse_block_entities(
-    data: bytes,
-) -> tuple[tuple[dict[str, object], ...], bytes]:
-    """Best-effort parse of ``(short xz, short y, NBT)`` records.
-
-    1.8 does not prefix the record count. Anything that does not parse cleanly is returned as
-    leftover bytes so a single odd chunk cannot break the connection.
-    """
-    reader = PacketReader(data)
-    entities: list[dict[str, object]] = []
-    while reader.remaining >= 4:
-        start = reader.offset
-        try:
-            xz = reader.read_u16()
-            y = reader.read_u16()
-            tag = read_nbt(reader, named=True)
-        except Exception:
-            reader._offset = start
-            break
-        value = tag.value if hasattr(tag, "value") else tag
-        if not isinstance(value, dict):
-            reader._offset = start
-            break
-        record = dict(value)
-        record["x"] = xz >> 4
-        record["z"] = xz & 0x0F
-        record["y"] = y
-        entities.append(record)
-    return tuple(entities), data[reader.offset :]
